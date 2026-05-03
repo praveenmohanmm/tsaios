@@ -9,6 +9,8 @@ jobs:
   build:
     name: Build iOS (Swift/Xcode)
     runs-on: macos-15
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - name: Xcode version
