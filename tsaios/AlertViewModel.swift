@@ -75,6 +75,13 @@ final class AlertViewModel: ObservableObject {
         settings.save()
     }
 
+    /// Fires an alert (audio + iPhone haptic + Watch notification) without
+    /// requiring the user to be near a real signal — used by the
+    /// "Test Alert" button on the Settings screen.
+    func testAlert() {
+        fireAlert(distanceMetres: 50)
+    }
+
     // MARK: - Location subscription
 
     private func subscribeToLocation() {

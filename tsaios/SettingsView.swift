@@ -14,11 +14,11 @@ struct SettingsView: View {
                         Slider(
                             value: $vm.settings.minSpeedKmh,
                             in: 0...60,
-                            step: 5
+                            step: 1
                         )
                         .onChange(of: vm.settings.minSpeedKmh) { _ in
                             if vm.settings.minSpeedKmh >= vm.settings.maxSpeedKmh {
-                                vm.settings.minSpeedKmh = vm.settings.maxSpeedKmh - 5
+                                vm.settings.minSpeedKmh = vm.settings.maxSpeedKmh - 1
                             }
                             vm.saveSettings()
                         }
@@ -30,11 +30,11 @@ struct SettingsView: View {
                         Slider(
                             value: $vm.settings.maxSpeedKmh,
                             in: 20...150,
-                            step: 5
+                            step: 1
                         )
                         .onChange(of: vm.settings.maxSpeedKmh) { _ in
                             if vm.settings.maxSpeedKmh <= vm.settings.minSpeedKmh {
-                                vm.settings.maxSpeedKmh = vm.settings.minSpeedKmh + 5
+                                vm.settings.maxSpeedKmh = vm.settings.minSpeedKmh + 1
                             }
                             vm.saveSettings()
                         }
@@ -54,10 +54,25 @@ struct SettingsView: View {
                 }
 
                 Section(header: Text("Alert Radius (by speed)")) {
-                    radiusRow(label: "< 30 km/h", radius: "80 m")
-                    radiusRow(label: "30–50 km/h", radius: "100 m")
-                    radiusRow(label: "50–70 km/h", radius: "120 m")
-                    radiusRow(label: "> 70 km/h", radius: "150 m")
+                    radiusRow(label: "17–30 km/h",  radius: "50 m")
+                    radiusRow(label: "30–50 km/h",  radius: "60 m")
+                    radiusRow(label: "50–60 km/h",  radius: "80 m")
+                    radiusRow(label: "60–70 km/h",  radius: "90 m")
+                    radiusRow(label: "70–100 km/h", radius: "100 m")
+                }
+
+                Section(header: Text("Test"),
+                        footer: Text("Plays the selected tone, vibrates iPhone, and posts a time-sensitive notification (Apple Watch should buzz).")) {
+                    Button {
+                        vm.testAlert()
+                    } label: {
+                        Label("Test Audio & Haptics", systemImage: "waveform.circle.fill")
+                            .font(.subheadline.bold())
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 8)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.blue)
                 }
             }
             .navigationTitle("Settings")
