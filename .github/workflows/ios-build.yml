@@ -13,8 +13,11 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+
       - name: Xcode version
         run: xcodebuild -version
+
+      # ── Simulator build (always runs, confirms the code compiles) ──────────
       - name: Build for simulator
         run: |
           xcodebuild build \
@@ -25,12 +28,71 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO
-      - name: Create GitHub Release
+
+      # ── Signed IPA (only on v* tags, requires secrets) ────────────────────
+      - name: Install Apple Distribution Certificate
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          DIST_CERTIFICATE_P12: ${{ secrets.DIST_CERTIFICATE_P12 }}
+          DIST_CERTIFICATE_PASSWORD: ${{ secrets.DIST_CERTIFICATE_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          echo -n "$DIST_CERTIFICATE_P12" | base64 --decode -o $RUNNER_TEMP/distribution.p12
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security import $RUNNER_TEMP/distribution.p12 \
+            -P "$DIST_CERTIFICATE_PASSWORD" \
+            -A -t cert -f pkcs12 \
+            -k $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+          security set-key-partition-list \
+            -S apple-tool:,apple: \
+            -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+      - name: Install Provisioning Profile
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          PROVISIONING_PROFILE: ${{ secrets.PROVISIONING_PROFILE }}
+        run: |
+          PP_PATH=$RUNNER_TEMP/profile.mobileprovision
+          echo -n "$PROVISIONING_PROFILE" | base64 --decode -o $PP_PATH
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          # Extract UUID and install
+          UUID=$(security cms -D -i $PP_PATH | \
+            plutil -extract UUID raw -)
+          cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
+          echo "Installed profile UUID: $UUID"
+
+      - name: Archive
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          xcodebuild archive \
+            -project tsaios.xcodeproj \
+            -scheme tsaios \
+            -destination 'generic/platform=iOS' \
+            -configuration Release \
+            -archivePath $RUNNER_TEMP/tsaios.xcarchive \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM="${{ secrets.APPLE_TEAM_ID }}" \
+            PROVISIONING_PROFILE_SPECIFIER="${{ secrets.PROVISIONING_PROFILE_NAME }}"
+
+      - name: Export IPA
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath $RUNNER_TEMP/tsaios.xcarchive \
+            -exportOptionsPlist ExportOptions.plist \
+            -exportPath $RUNNER_TEMP/ipa
+
+      - name: Create GitHub Release with IPA
         if: startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create ${{ github.ref_name }} \
+            $RUNNER_TEMP/ipa/tsaios.ipa \
             --title "Traffic Signal Alert ${{ github.ref_name }}" \
             --generate-notes \
             --repo ${{ github.repository }}
