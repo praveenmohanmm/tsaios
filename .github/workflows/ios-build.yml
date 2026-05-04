@@ -53,7 +53,7 @@ jobs:
           echo "=== Installed certificates ==="
           security find-identity -v -p codesigning $KEYCHAIN_PATH
 
-      - name: Install Provisioning Profile
+      - name: Install iOS Provisioning Profile
         if: startsWith(github.ref, 'refs/tags/v')
         env:
           PROVISIONING_PROFILE: ${{ secrets.PROVISIONING_PROFILE }}
@@ -65,14 +65,50 @@ jobs:
           PROFILE_NAME=$(security cms -D -i $PP_PATH | plutil -extract Name raw -)
           APP_ID=$(security cms -D -i $PP_PATH | plutil -extract Entitlements.application-identifier raw -)
           cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
-          echo "=== Installed provisioning profile ==="
+          echo "=== Installed iOS provisioning profile ==="
           echo "  UUID : $UUID"
           echo "  Name : $PROFILE_NAME"
           echo "  AppID: $APP_ID"
 
+      # Optional: install Watch provisioning profile when secret is provided.
+      # Set WATCH_PROVISIONING_PROFILE (base64 .mobileprovision) and
+      # WATCH_PROVISIONING_PROFILE_NAME in repo secrets to enable Watch signing.
+      - name: Install Watch Provisioning Profile
+        if: startsWith(github.ref, 'refs/tags/v') && secrets.WATCH_PROVISIONING_PROFILE != ''
+        env:
+          WATCH_PROVISIONING_PROFILE: ${{ secrets.WATCH_PROVISIONING_PROFILE }}
+        run: |
+          WPP_PATH=$RUNNER_TEMP/watch_profile.mobileprovision
+          echo -n "$WATCH_PROVISIONING_PROFILE" | base64 --decode -o $WPP_PATH
+          UUID=$(security cms -D -i $WPP_PATH | plutil -extract UUID raw -)
+          PROFILE_NAME=$(security cms -D -i $WPP_PATH | plutil -extract Name raw -)
+          cp $WPP_PATH ~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
+          echo "=== Installed Watch provisioning profile ==="
+          echo "  UUID : $UUID"
+          echo "  Name : $PROFILE_NAME"
+
       - name: Archive
         if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          WATCH_PP_NAME: ${{ secrets.WATCH_PROVISIONING_PROFILE_NAME }}
         run: |
+          # Build Watch signing args: manual when Watch profile provided,
+          # otherwise disable Watch code-signing so the iOS archive still succeeds.
+          if [ -n "$WATCH_PP_NAME" ]; then
+            WATCH_ARGS=(
+              "CODE_SIGN_STYLE[sdk=watchos*]=Manual"
+              "CODE_SIGN_IDENTITY[sdk=watchos*]=Apple Development"
+              "PROVISIONING_PROFILE_SPECIFIER[sdk=watchos*]=${WATCH_PP_NAME}"
+            )
+            echo "Watch signing: MANUAL with profile '$WATCH_PP_NAME'"
+          else
+            WATCH_ARGS=(
+              "CODE_SIGNING_REQUIRED[sdk=watchos*]=NO"
+              "CODE_SIGN_IDENTITY[sdk=watchos*]="
+            )
+            echo "Watch signing: DISABLED (WATCH_PROVISIONING_PROFILE_NAME not set)"
+          fi
+
           xcodebuild archive \
             -project tsaios.xcodeproj \
             -scheme tsaios \
@@ -82,19 +118,30 @@ jobs:
             CODE_SIGN_STYLE=Manual \
             CODE_SIGN_IDENTITY="Apple Development" \
             DEVELOPMENT_TEAM="${{ secrets.APPLE_TEAM_ID }}" \
-            PROVISIONING_PROFILE_SPECIFIER="${{ secrets.PROVISIONING_PROFILE_NAME }}"
+            PROVISIONING_PROFILE_SPECIFIER="${{ secrets.PROVISIONING_PROFILE_NAME }}" \
+            "${WATCH_ARGS[@]}"
           echo "=== Archive contents ==="
           ls -la $RUNNER_TEMP/tsaios.xcarchive/Products/Applications/ 2>/dev/null || echo "No Applications in archive"
 
       - name: Export IPA
         if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          WATCH_PP_NAME: ${{ secrets.WATCH_PROVISIONING_PROFILE_NAME }}
         run: |
           set -o pipefail
+          # When no Watch profile is available, skip embedding the Watch app
+          # so the export succeeds without a Watch signing identity.
+          EXPORT_PLIST=$RUNNER_TEMP/ExportOptions.plist
+          cp ExportOptions.plist $EXPORT_PLIST
+          if [ -z "$WATCH_PP_NAME" ]; then
+            echo "No Watch profile — adding skipWatchApp=true to ExportOptions"
+            /usr/libexec/PlistBuddy -c "Add :skipWatchApp bool true" $EXPORT_PLIST
+          fi
           echo "=== ExportOptions.plist ==="
-          cat ExportOptions.plist
+          cat $EXPORT_PLIST
           xcodebuild -exportArchive \
             -archivePath $RUNNER_TEMP/tsaios.xcarchive \
-            -exportOptionsPlist ExportOptions.plist \
+            -exportOptionsPlist $EXPORT_PLIST \
             -exportPath $RUNNER_TEMP/ipa \
             -verbose 2>&1 | tee $RUNNER_TEMP/export.log
           echo "=== Export directory contents ==="
@@ -135,7 +182,7 @@ jobs:
                           <key>kind</key>
                           <string>software</string>
                           <key>title</key>
-                          <string>Traffic Signal Alert</string>
+                          <string>Alert ME</string>
                       </dict>
                   </dict>
               </array>
@@ -151,7 +198,7 @@ jobs:
           <head>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1">
-            <title>Install Traffic Signal Alert</title>
+            <title>Install Alert ME</title>
             <style>
               body { font-family: -apple-system, sans-serif; text-align: center;
                      padding: 60px 20px; background: #f2f2f7; }
@@ -163,7 +210,7 @@ jobs:
             </style>
           </head>
           <body>
-            <h1>🚦 Traffic Signal Alert</h1>
+            <h1>🚦 Alert ME</h1>
             <p>Version ${TAG} &mdash; Open this page in Safari on your iPhone</p>
             <a href="${INSTALL_URL}">Install on iPhone</a>
           </body>
@@ -189,7 +236,7 @@ jobs:
             "$IPA_PATH" \
             "$RUNNER_TEMP/ipa/manifest.plist" \
             "$RUNNER_TEMP/ipa/install.html" \
-            --title "Traffic Signal Alert ${{ github.ref_name }}" \
+            --title "Alert ME ${{ github.ref_name }}" \
             --notes "## Install on iPhone
 
           ### Method 1 — Tap to install (Safari on iPhone)
@@ -200,5 +247,10 @@ jobs:
 
           ### Method 2 — Sideloadly (Windows/Mac)
           1. Download \`tsaios.ipa\` below
-          2. Open [Sideloadly](https://sideloadly.io), connect iPhone, drag IPA in" \
+          2. Open [Sideloadly](https://sideloadly.io), connect iPhone, drag IPA in
+
+          ### Apple Watch
+          The Watch companion app (\`Alert ME\` on watchOS) is embedded in the IPA when
+          \`WATCH_PROVISIONING_PROFILE_NAME\` secret is set. Install the iPhone app first —
+          the Watch app installs automatically alongside it." \
             --repo ${{ github.repository }}

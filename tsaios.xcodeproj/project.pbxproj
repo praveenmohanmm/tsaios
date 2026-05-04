@@ -18,7 +18,39 @@
 		CAFECAFE00000000BF000009 /* data.json in Resources */ = {isa = PBXBuildFile; fileRef = CAFECAFE00000000FR000009 /* data.json */; };
 		CAFECAFE00000000BF000010 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CAFECAFE00000000FR000011 /* Assets.xcassets */; };
 		CAFECAFE00000000BF000011 /* WatchHapticService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAFECAFE00000000FR000013 /* WatchHapticService.swift */; };
+		CAFECAFE00000000BF000020 /* WatchConnectivity.framework in Frameworks (iOS) */ = {isa = PBXBuildFile; fileRef = CAFECAFE00000000FR000020 /* WatchConnectivity.framework */; };
+		CAFECAFE00000000BF000021 /* WatchConnectivity.framework in Frameworks (Watch) */ = {isa = PBXBuildFile; fileRef = CAFECAFE00000000FR000020 /* WatchConnectivity.framework */; };
+		CAFECAFE00000000BF000022 /* WatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAFECAFE00000000FR000021 /* WatchApp.swift */; };
+		CAFECAFE00000000BF000023 /* WatchSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAFECAFE00000000FR000022 /* WatchSessionManager.swift */; };
+		CAFECAFE00000000BF000024 /* WatchContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAFECAFE00000000FR000023 /* WatchContentView.swift */; };
+		CAFECAFE00000000BF000025 /* Watch Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CAFECAFE00000000FR000024 /* Watch Assets.xcassets */; };
+		CAFECAFE00000000BF000026 /* PhoneSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAFECAFE00000000FR000025 /* PhoneSessionManager.swift */; };
+		CAFECAFE00000000BF000027 /* tsaiosWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = CAFECAFE00000000FR000026 /* tsaiosWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		CAFECAFE00000000PROXY01 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = CAFECAFE00000000PR000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CAFECAFE00000000TG000010;
+			remoteInfo = tsaiosWatch;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		CAFECAFE00000000TG000023 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				CAFECAFE00000000BF000027 /* tsaiosWatch.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		CAFECAFE00000000FR000001 /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
@@ -34,13 +66,29 @@
 		CAFECAFE00000000FR000011 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		CAFECAFE00000000FR000012 /* tsaios.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = tsaios.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CAFECAFE00000000FR000013 /* WatchHapticService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchHapticService.swift; sourceTree = "<group>"; };
+		CAFECAFE00000000FR000020 /* WatchConnectivity.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WatchConnectivity.framework; path = System/Library/Frameworks/WatchConnectivity.framework; sourceTree = SDKROOT; };
+		CAFECAFE00000000FR000021 /* WatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchApp.swift; sourceTree = "<group>"; };
+		CAFECAFE00000000FR000022 /* WatchSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchSessionManager.swift; sourceTree = "<group>"; };
+		CAFECAFE00000000FR000023 /* WatchContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchContentView.swift; sourceTree = "<group>"; };
+		CAFECAFE00000000FR000024 /* Watch Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		CAFECAFE00000000FR000025 /* PhoneSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneSessionManager.swift; sourceTree = "<group>"; };
+		CAFECAFE00000000FR000026 /* tsaiosWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = tsaiosWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		CAFECAFE00000000TG000004 /* Frameworks */ = {
+		CAFECAFE00000000TG000004 /* Frameworks (iOS) */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CAFECAFE00000000BF000020 /* WatchConnectivity.framework in Frameworks (iOS) */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CAFECAFE00000000TG000022 /* Frameworks (Watch) */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CAFECAFE00000000BF000021 /* WatchConnectivity.framework in Frameworks (Watch) */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -51,6 +99,8 @@
 			isa = PBXGroup;
 			children = (
 				CAFECAFE00000000GR000002 /* tsaios */,
+				CAFECAFE00000000GR000010 /* tsaiosWatch */,
+				CAFECAFE00000000GR000011 /* Frameworks */,
 				CAFECAFE00000000GR000003 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -67,6 +117,7 @@
 				CAFECAFE00000000FR000007 /* AlertSettings.swift */,
 				CAFECAFE00000000FR000008 /* AudioService.swift */,
 				CAFECAFE00000000FR000013 /* WatchHapticService.swift */,
+				CAFECAFE00000000FR000025 /* PhoneSessionManager.swift */,
 				CAFECAFE00000000FR000009 /* data.json */,
 				CAFECAFE00000000FR000010 /* Info.plist */,
 				CAFECAFE00000000FR000011 /* Assets.xcassets */,
@@ -78,8 +129,28 @@
 			isa = PBXGroup;
 			children = (
 				CAFECAFE00000000FR000012 /* tsaios.app */,
+				CAFECAFE00000000FR000026 /* tsaiosWatch.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		CAFECAFE00000000GR000010 /* tsaiosWatch */ = {
+			isa = PBXGroup;
+			children = (
+				CAFECAFE00000000FR000021 /* WatchApp.swift */,
+				CAFECAFE00000000FR000022 /* WatchSessionManager.swift */,
+				CAFECAFE00000000FR000023 /* WatchContentView.swift */,
+				CAFECAFE00000000FR000024 /* Watch Assets.xcassets */,
+			);
+			path = tsaiosWatch;
+			sourceTree = "<group>";
+		};
+		CAFECAFE00000000GR000011 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				CAFECAFE00000000FR000020 /* WatchConnectivity.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -92,14 +163,33 @@
 				CAFECAFE00000000TG000002 /* Sources */,
 				CAFECAFE00000000TG000003 /* Resources */,
 				CAFECAFE00000000TG000004 /* Frameworks */,
+				CAFECAFE00000000TG000023 /* Embed Watch Content */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				CAFECAFE00000000DEP001 /* PBXTargetDependency */,
+			);
+			name = tsaios;
+			productName = tsaios;
+			productReference = CAFECAFE00000000FR000012 /* tsaios.app */;
+			productType = "com.apple.product-type.application";
+		};
+		CAFECAFE00000000TG000010 /* tsaiosWatch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CAFECAFE00000000CL000010 /* Build configuration list for PBXNativeTarget "tsaiosWatch" */;
+			buildPhases = (
+				CAFECAFE00000000TG000020 /* Sources */,
+				CAFECAFE00000000TG000021 /* Resources */,
+				CAFECAFE00000000TG000022 /* Frameworks */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
-			name = tsaios;
-			productName = tsaios;
-			productReference = CAFECAFE00000000FR000012 /* tsaios.app */;
+			name = tsaiosWatch;
+			productName = tsaiosWatch;
+			productReference = CAFECAFE00000000FR000026 /* tsaiosWatch.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -113,6 +203,9 @@
 				LastUpgradeCheck = 1500;
 				TargetAttributes = {
 					CAFECAFE00000000TG000001 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+					CAFECAFE00000000TG000010 = {
 						CreatedOnToolsVersion = 15.0;
 					};
 				};
@@ -131,12 +224,13 @@
 			projectRoot = "";
 			targets = (
 				CAFECAFE00000000TG000001 /* tsaios */,
+				CAFECAFE00000000TG000010 /* tsaiosWatch */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		CAFECAFE00000000TG000003 /* Resources */ = {
+		CAFECAFE00000000TG000003 /* Resources (iOS) */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -145,10 +239,18 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		CAFECAFE00000000TG000021 /* Resources (Watch) */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CAFECAFE00000000BF000025 /* Watch Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		CAFECAFE00000000TG000002 /* Sources */ = {
+		CAFECAFE00000000TG000002 /* Sources (iOS) */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -161,10 +263,29 @@
 				CAFECAFE00000000BF000007 /* AlertSettings.swift in Sources */,
 				CAFECAFE00000000BF000008 /* AudioService.swift in Sources */,
 				CAFECAFE00000000BF000011 /* WatchHapticService.swift in Sources */,
+				CAFECAFE00000000BF000026 /* PhoneSessionManager.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CAFECAFE00000000TG000020 /* Sources (Watch) */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CAFECAFE00000000BF000022 /* WatchApp.swift in Sources */,
+				CAFECAFE00000000BF000023 /* WatchSessionManager.swift in Sources */,
+				CAFECAFE00000000BF000024 /* WatchContentView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		CAFECAFE00000000DEP001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CAFECAFE00000000TG000010 /* tsaiosWatch */;
+			targetProxy = CAFECAFE00000000PROXY01 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		CAFECAFE00000000BC000001 /* Debug */ = {
@@ -284,7 +405,7 @@
 			};
 			name = Release;
 		};
-		CAFECAFE00000000BC000003 /* Debug */ = {
+		CAFECAFE00000000BC000003 /* Debug (iOS target) */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -309,7 +430,7 @@
 			};
 			name = Debug;
 		};
-		CAFECAFE00000000BC000004 /* Release */ = {
+		CAFECAFE00000000BC000004 /* Release (iOS target) */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -334,6 +455,50 @@
 			};
 			name = Release;
 		};
+		CAFECAFE00000000BC000010 /* Debug (Watch target) */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 7829H66W32;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Alert ME";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = "com.poodlesoft.tsaios";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.poodlesoft.tsaios.watchkitapp";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 9.0;
+			};
+			name = Debug;
+		};
+		CAFECAFE00000000BC000011 /* Release (Watch target) */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 7829H66W32;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Alert ME";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = "com.poodlesoft.tsaios";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.poodlesoft.tsaios.watchkitapp";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 9.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -351,6 +516,15 @@
 			buildConfigurations = (
 				CAFECAFE00000000BC000003 /* Debug */,
 				CAFECAFE00000000BC000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CAFECAFE00000000CL000010 /* Build configuration list for PBXNativeTarget "tsaiosWatch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CAFECAFE00000000BC000010 /* Debug */,
+				CAFECAFE00000000BC000011 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

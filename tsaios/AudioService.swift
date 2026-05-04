@@ -2,6 +2,23 @@ import AVFoundation
 
 final class AudioService {
 
+    /// Configure the shared audio session once at launch so alerts play
+    /// even when the app is backgrounded and other audio (e.g. navigation)
+    /// is running. `duckOthers` briefly lowers navigation/music volume so
+    /// the beep is clearly audible while driving.
+    static func configureAudioSession() {
+        do {
+            try AVAudioSession.sharedInstance().setCategory(
+                .playback,
+                mode: .default,
+                options: [.mixWithOthers, .duckOthers]
+            )
+            try AVAudioSession.sharedInstance().setActive(true)
+        } catch {
+            print("AudioService: AVAudioSession setup failed — \(error)")
+        }
+    }
+
     // MARK: - Public play methods
 
     func play(_ tone: AlertTone) {
