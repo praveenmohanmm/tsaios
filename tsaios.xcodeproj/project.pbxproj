@@ -17,6 +17,7 @@
 		CAFECAFE00000000BF000008 /* AudioService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAFECAFE00000000FR000008 /* AudioService.swift */; };
 		CAFECAFE00000000BF000009 /* data.json in Resources */ = {isa = PBXBuildFile; fileRef = CAFECAFE00000000FR000009 /* data.json */; };
 		CAFECAFE00000000BF000010 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CAFECAFE00000000FR000011 /* Assets.xcassets */; };
+		CAFECAFE00000000BF000011 /* WatchHapticService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAFECAFE00000000FR000013 /* WatchHapticService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,6 +33,7 @@
 		CAFECAFE00000000FR000010 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		CAFECAFE00000000FR000011 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		CAFECAFE00000000FR000012 /* tsaios.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = tsaios.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		CAFECAFE00000000FR000013 /* WatchHapticService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchHapticService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -64,6 +66,7 @@
 				CAFECAFE00000000FR000006 /* TrafficSignalService.swift */,
 				CAFECAFE00000000FR000007 /* AlertSettings.swift */,
 				CAFECAFE00000000FR000008 /* AudioService.swift */,
+				CAFECAFE00000000FR000013 /* WatchHapticService.swift */,
 				CAFECAFE00000000FR000009 /* data.json */,
 				CAFECAFE00000000FR000010 /* Info.plist */,
 				CAFECAFE00000000FR000011 /* Assets.xcassets */,
@@ -157,6 +160,7 @@
 				CAFECAFE00000000BF000006 /* TrafficSignalService.swift in Sources */,
 				CAFECAFE00000000BF000007 /* AlertSettings.swift in Sources */,
 				CAFECAFE00000000BF000008 /* AudioService.swift in Sources */,
+				CAFECAFE00000000BF000011 /* WatchHapticService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

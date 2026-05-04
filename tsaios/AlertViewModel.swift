@@ -44,6 +44,7 @@ final class AlertViewModel: ObservableObject {
 
     init() {
         locationManager.requestPermission()
+        WatchHapticService.shared.requestPermission()
         subscribeToLocation()
     }
 
@@ -147,19 +148,22 @@ final class AlertViewModel: ObservableObject {
             guard !alertedSignalIds.contains(item.signal.id) else { continue }
             alertedSignalIds.insert(item.signal.id)
             alertsFired += 1
-            fireAlert()
+            fireAlert(distanceMetres: Int(item.distance))
             break  // one alert per update cycle
         }
     }
 
-    private func fireAlert() {
-        // Haptic
+    private func fireAlert(distanceMetres: Int) {
+        // iPhone haptic — also mirrors to Apple Watch when Haptic Alerts is enabled.
         let generator = UINotificationFeedbackGenerator()
         generator.prepare()
         generator.notificationOccurred(.warning)
 
         // Audio
         audioService.play(settings.tone)
+
+        // Apple Watch haptic via local notification (.timeSensitive forwards to Watch)
+        WatchHapticService.shared.triggerWatchHaptic(distanceMetres: distanceMetres)
     }
 
     private func clearAlertState() {
