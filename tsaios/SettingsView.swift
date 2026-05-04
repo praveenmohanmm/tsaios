@@ -1,8 +1,12 @@
 import SwiftUI
+import UserNotifications
 
 struct SettingsView: View {
     @ObservedObject var vm: AlertViewModel
     @Environment(\.dismiss) private var dismiss
+
+    @State private var testConfirmation: String = ""
+    @State private var notificationsAllowed: Bool = true
 
     var body: some View {
         NavigationStack {
@@ -61,18 +65,39 @@ struct SettingsView: View {
                     radiusRow(label: "70–100 km/h", radius: "100 m")
                 }
 
-                Section(header: Text("Test"),
-                        footer: Text("Plays the selected tone, vibrates iPhone, and posts a time-sensitive notification (Apple Watch should buzz).")) {
+                Section(
+                    header: Text("Test"),
+                    footer: testFooter
+                ) {
                     Button {
-                        vm.testAlert()
+                        runTest()
                     } label: {
-                        Label("Test Audio & Haptics", systemImage: "waveform.circle.fill")
-                            .font(.subheadline.bold())
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 8)
+                        HStack {
+                            Label("Test Audio & Haptics", systemImage: "waveform.circle.fill")
+                                .font(.subheadline.bold())
+                            Spacer()
+                            if !testConfirmation.isEmpty {
+                                Text(testConfirmation)
+                                    .font(.caption.bold())
+                                    .foregroundColor(.green)
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(.blue)
+
+                    if !notificationsAllowed {
+                        HStack(spacing: 8) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundColor(.orange)
+                            Text("Notifications are off — Watch haptic won't fire. Enable in Settings → Alert ME → Notifications.")
+                                .font(.caption)
+                                .foregroundColor(.orange)
+                        }
+                        .padding(.vertical, 4)
+                    }
                 }
             }
             .navigationTitle("Settings")
@@ -82,7 +107,33 @@ struct SettingsView: View {
                     Button("Done") { dismiss() }
                 }
             }
+            .task {
+                await checkNotificationPermission()
+            }
         }
+    }
+
+    // MARK: - Helpers
+
+    @ViewBuilder
+    private var testFooter: some View {
+        Text("Plays the selected tone and vibrates the iPhone. The Apple Watch will buzz if Notifications are allowed and the iPhone screen is off.")
+    }
+
+    private func runTest() {
+        testConfirmation = ""
+        vm.testAlert()
+        testConfirmation = "✓ Fired!"
+        // Clear the confirmation label after 2 seconds.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            testConfirmation = ""
+        }
+    }
+
+    private func checkNotificationPermission() async {
+        let settings = await UNUserNotificationCenter.current().notificationSettings()
+        notificationsAllowed = settings.authorizationStatus == .authorized ||
+                               settings.authorizationStatus == .provisional
     }
 
     private func radiusRow(label: String, radius: String) -> some View {
