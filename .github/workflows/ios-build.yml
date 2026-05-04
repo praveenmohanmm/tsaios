@@ -30,7 +30,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO
 
       # ── Signed IPA (only on v* tags, requires secrets) ────────────────────
-      - name: Install Apple Distribution Certificate
+      - name: Install Apple Development Certificate
         if: startsWith(github.ref, 'refs/tags/v')
         env:
           DIST_CERTIFICATE_P12: ${{ secrets.DIST_CERTIFICATE_P12 }}
@@ -100,15 +100,80 @@ jobs:
           echo "=== Export directory contents ==="
           ls -la $RUNNER_TEMP/ipa/
 
-      - name: Upload IPA as artifact
+      - name: Generate OTA manifest and install page
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: actions/upload-artifact@v4
-        with:
-          name: tsaios-ipa
-          path: ${{ runner.temp }}/ipa/*.ipa
-          if-no-files-found: warn
+        run: |
+          TAG="${{ github.ref_name }}"
+          REPO="${{ github.repository }}"
+          IPA_URL="https://github.com/${REPO}/releases/download/${TAG}/tsaios.ipa"
+          MANIFEST_URL="https://github.com/${REPO}/releases/download/${TAG}/manifest.plist"
 
-      - name: Create GitHub Release with IPA
+          # Generate manifest.plist
+          cat > $RUNNER_TEMP/ipa/manifest.plist << EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>items</key>
+              <array>
+                  <dict>
+                      <key>assets</key>
+                      <array>
+                          <dict>
+                              <key>kind</key>
+                              <string>software-package</string>
+                              <key>url</key>
+                              <string>${IPA_URL}</string>
+                          </dict>
+                      </array>
+                      <key>metadata</key>
+                      <dict>
+                          <key>bundle-identifier</key>
+                          <string>com.poodlesoft.tsaios</string>
+                          <key>bundle-version</key>
+                          <string>${TAG}</string>
+                          <key>kind</key>
+                          <string>software</string>
+                          <key>title</key>
+                          <string>Traffic Signal Alert</string>
+                      </dict>
+                  </dict>
+              </array>
+          </dict>
+          </plist>
+          EOF
+
+          # Generate install.html — open this in Safari on iPhone to install
+          INSTALL_URL="itms-services://?action=download-manifest&url=${MANIFEST_URL}"
+          cat > $RUNNER_TEMP/ipa/install.html << EOF
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>Install Traffic Signal Alert</title>
+            <style>
+              body { font-family: -apple-system, sans-serif; text-align: center;
+                     padding: 60px 20px; background: #f2f2f7; }
+              h1 { font-size: 24px; color: #1c1c1e; }
+              p  { color: #6c6c70; margin: 10px 0 30px; }
+              a  { display: inline-block; background: #007aff; color: white;
+                   padding: 16px 40px; border-radius: 12px; text-decoration: none;
+                   font-size: 18px; font-weight: 600; }
+            </style>
+          </head>
+          <body>
+            <h1>🚦 Traffic Signal Alert</h1>
+            <p>Version ${TAG} &mdash; Open this page in Safari on your iPhone</p>
+            <a href="${INSTALL_URL}">Install on iPhone</a>
+          </body>
+          </html>
+          EOF
+
+          echo "Generated manifest.plist and install.html"
+          echo "Install URL: ${INSTALL_URL}"
+
+      - name: Create GitHub Release with IPA + OTA files
         if: startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ github.token }}
@@ -122,6 +187,18 @@ jobs:
           echo "Found IPA: $IPA_PATH"
           gh release create ${{ github.ref_name }} \
             "$IPA_PATH" \
+            "$RUNNER_TEMP/ipa/manifest.plist" \
+            "$RUNNER_TEMP/ipa/install.html" \
             --title "Traffic Signal Alert ${{ github.ref_name }}" \
-            --generate-notes \
+            --notes "## Install on iPhone
+
+          ### Method 1 — Tap to install (Safari on iPhone)
+          1. Open this page on your iPhone in **Safari**
+          2. Tap **install.html** asset below to download it
+          3. Tap the **Install on iPhone** button
+          4. Go to Settings → General → VPN & Device Management → Trust
+
+          ### Method 2 — Sideloadly (Windows/Mac)
+          1. Download \`tsaios.ipa\` below
+          2. Open [Sideloadly](https://sideloadly.io), connect iPhone, drag IPA in" \
             --repo ${{ github.repository }}
