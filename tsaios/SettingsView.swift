@@ -57,12 +57,12 @@ struct SettingsView: View {
                     }
                 }
 
-                Section(header: Text("Alert Radius (by speed)")) {
-                    radiusRow(label: "17–30 km/h",  radius: "50 m")
-                    radiusRow(label: "30–50 km/h",  radius: "60 m")
-                    radiusRow(label: "50–60 km/h",  radius: "80 m")
-                    radiusRow(label: "60–70 km/h",  radius: "90 m")
-                    radiusRow(label: "70–100 km/h", radius: "100 m")
+                Section(header: Text("Alert Radius (metres by speed band)")) {
+                    radiusSlider(label: "17–30 km/h",  value: $vm.settings.radius17to30)
+                    radiusSlider(label: "30–50 km/h",  value: $vm.settings.radius30to50)
+                    radiusSlider(label: "50–60 km/h",  value: $vm.settings.radius50to60)
+                    radiusSlider(label: "60–70 km/h",  value: $vm.settings.radius60to70)
+                    radiusSlider(label: "70–100 km/h", value: $vm.settings.radius70to100)
                 }
 
                 Section(
@@ -136,12 +136,20 @@ struct SettingsView: View {
                                settings.authorizationStatus == .provisional
     }
 
-    private func radiusRow(label: String, radius: String) -> some View {
-        HStack {
-            Text(label)
-            Spacer()
-            Text(radius)
-                .foregroundColor(.secondary)
+    private func radiusSlider(label: String, value: Binding<Double>) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(label)
+                    .font(.subheadline)
+                Spacer()
+                Text("\(Int(value.wrappedValue)) m")
+                    .font(.subheadline.bold())
+                    .foregroundColor(.secondary)
+                    .frame(minWidth: 48, alignment: .trailing)
+            }
+            Slider(value: value, in: 20...300, step: 5)
+                .onChange(of: value.wrappedValue) { _ in vm.saveSettings() }
         }
+        .padding(.vertical, 4)
     }
 }

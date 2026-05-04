@@ -19,6 +19,13 @@ struct AlertSettings: Codable, Equatable {
     var maxSpeedKmh: Double = 100.0
     var tone: AlertTone = .tripleBeep
 
+    // Per-band alert radii (metres). Each can be tuned independently.
+    var radius17to30: Double  = 50.0   // 17–30 km/h
+    var radius30to50: Double  = 60.0   // 30–50 km/h
+    var radius50to60: Double  = 80.0   // 50–60 km/h
+    var radius60to70: Double  = 90.0   // 60–70 km/h
+    var radius70to100: Double = 100.0  // 70–100 km/h
+
     private static let userDefaultsKey = "AlertSettings"
 
     static func load() -> AlertSettings {
@@ -35,21 +42,16 @@ struct AlertSettings: Codable, Equatable {
         }
     }
 
-    /// Returns the alert radius in metres for the given speed (km/h), or nil if outside speed range.
-    ///
-    ///   17–30 km/h →  50 m
-    ///   30–50 km/h →  60 m
-    ///   50–60 km/h →  80 m
-    ///   60–70 km/h →  90 m
-    ///   70–100 km/h → 100 m
+    /// Returns the alert radius in metres for the given speed (km/h),
+    /// or nil if the speed is outside [minSpeedKmh, maxSpeedKmh].
     func alertRadius(forSpeedKmh speedKmh: Double) -> Double? {
         guard speedKmh >= minSpeedKmh && speedKmh <= maxSpeedKmh else { return nil }
         switch speedKmh {
-        case ..<30: return 50.0
-        case ..<50: return 60.0
-        case ..<60: return 80.0
-        case ..<70: return 90.0
-        default:    return 100.0
+        case ..<30: return radius17to30
+        case ..<50: return radius30to50
+        case ..<60: return radius50to60
+        case ..<70: return radius60to70
+        default:    return radius70to100
         }
     }
 }
