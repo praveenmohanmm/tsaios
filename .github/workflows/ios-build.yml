@@ -74,10 +74,14 @@ jobs:
       # Set WATCH_PROVISIONING_PROFILE (base64 .mobileprovision) and
       # WATCH_PROVISIONING_PROFILE_NAME in repo secrets to enable Watch signing.
       - name: Install Watch Provisioning Profile
-        if: startsWith(github.ref, 'refs/tags/v') && secrets.WATCH_PROVISIONING_PROFILE != ''
+        if: startsWith(github.ref, 'refs/tags/v')
         env:
           WATCH_PROVISIONING_PROFILE: ${{ secrets.WATCH_PROVISIONING_PROFILE }}
         run: |
+          if [ -z "$WATCH_PROVISIONING_PROFILE" ]; then
+            echo "WATCH_PROVISIONING_PROFILE secret not set — skipping Watch profile install"
+            exit 0
+          fi
           WPP_PATH=$RUNNER_TEMP/watch_profile.mobileprovision
           echo -n "$WATCH_PROVISIONING_PROFILE" | base64 --decode -o $WPP_PATH
           UUID=$(security cms -D -i $WPP_PATH | plutil -extract UUID raw -)
