@@ -52,7 +52,7 @@ final class WatchSessionManager: NSObject, ObservableObject {
     private func beginWorkout() {
         // Stop any existing session first.
         if let existing = workoutSession {
-            healthStore.end(existing)
+            existing.end()
         }
         let config = HKWorkoutConfiguration()
         config.activityType = .other        // generic — no fitness framing shown
@@ -62,7 +62,7 @@ final class WatchSessionManager: NSObject, ObservableObject {
                                                configuration: config)
             session.delegate = self
             workoutSession = session
-            healthStore.start(session, at: Date())
+            healthStore.start(session)
         } catch {
             print("WatchSessionManager: HKWorkoutSession failed to start — \(error)")
         }
