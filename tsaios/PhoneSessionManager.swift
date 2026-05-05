@@ -28,11 +28,13 @@ final class PhoneSessionManager: NSObject, ObservableObject {
         ]
 
         if session.isReachable {
-            // Watch app is running (foreground or background task active) — deliver instantly.
+            // Watch app is in foreground — deliver instantly via sendMessage.
             session.sendMessage(message, replyHandler: nil) { _ in }
         } else {
-            // Watch app not currently reachable — queue for next background delivery.
-            session.transferUserInfo(message)
+            // Watch app is backgrounded/locked.
+            // updateApplicationContext is delivered as soon as the next background
+            // task runs — much faster than transferUserInfo for real-time alerts.
+            try? session.updateApplicationContext(message)
         }
     }
 }
