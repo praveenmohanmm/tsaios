@@ -23,7 +23,7 @@ final class WatchHapticService {
         let content = UNMutableNotificationContent()
         content.title = "🚦 Signal Ahead"
         content.body = "\(distanceMetres) m away"
-        content.sound = nil          // audio is handled separately by AudioService
+        content.sound = .default     // sound required for notification to mirror to Watch
         if #available(iOS 15.0, *) {
             content.interruptionLevel = .timeSensitive
         }
