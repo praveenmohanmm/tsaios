@@ -37,14 +37,15 @@ final class AudioService {
     // MARK: - Existing tones (amplitude boosted to 0.85)
 
     private func playTripleBeep() async {
+        // Square-wave at 1200 Hz — harsh and loud, cuts through road/wind noise
         for i in 0..<3 {
-            if i > 0 { try? await Task.sleep(nanoseconds: 130_000_000) }
-            playTone(frequency: 1000.0, duration: 0.13, amplitude: 0.85)
+            if i > 0 { try? await Task.sleep(nanoseconds: 120_000_000) }
+            playSquareTone(frequency: 1200.0, duration: 0.18, amplitude: 0.92)
         }
     }
 
     private func playSingleBeep() async {
-        playTone(frequency: 1000.0, duration: 0.25, amplitude: 0.85)
+        playSquareTone(frequency: 1200.0, duration: 0.28, amplitude: 0.92)
     }
 
     private func playAlertChime() async {

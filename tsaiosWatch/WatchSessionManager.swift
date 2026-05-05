@@ -1,13 +1,15 @@
 import WatchConnectivity
 import WatchKit
 
-/// Receives alert messages from the paired iPhone and fires the chosen haptic pattern.
+/// Manages WCSession and an WKExtendedRuntimeSession that keeps the Watch app
+/// running in the background.
 ///
-/// Delivery paths:
-///   • sendMessage            → Watch app in foreground  → playPattern() directly
-///   • updateApplicationContext → Watch app locked/backgrounded → background task
-///                                wakes app → playPattern() directly
-///                                (WKInterfaceDevice.play() is supported in background tasks)
+/// When the extended session is active, WCSession.isReachable == true on the
+/// iPhone side, so the iPhone uses sendMessage for instant haptic delivery —
+/// even when the Watch display is off / locked.
+///
+/// The user opens the Watch app once before driving; the session auto-restarts
+/// whenever it is about to expire.
 @MainActor
 final class WatchSessionManager: NSObject, ObservableObject {
 
@@ -15,8 +17,11 @@ final class WatchSessionManager: NSObject, ObservableObject {
 
     @Published var lastAlertDistance: Int?
     @Published var lastAlertTime: Date?
+    @Published var extendedSessionActive = false
 
-    /// Suspends handleBackgroundConnectivity() until the delegate fires, then resolves.
+    private var extendedSession: WKExtendedRuntimeSession?
+
+    /// Suspends handleBackgroundConnectivity() until the delegate fires.
     private var backgroundContinuation: CheckedContinuation<Void, Never>?
 
     private override init() {
@@ -26,17 +31,25 @@ final class WatchSessionManager: NSObject, ObservableObject {
         WCSession.default.activate()
     }
 
-    // MARK: - Background task entry point
+    // MARK: - Extended runtime session
 
-    /// Called by the `.watchConnectivity` background task in WatchApp.swift.
-    /// Suspends until the incoming delegate fires and plays the haptic,
-    /// then returns so watchOS can reclaim the background budget.
+    /// Start (or restart) the extended runtime session.
+    /// Must be called while the app is in the foreground, or from within
+    /// an already-running extended session (e.g. on willExpire).
+    func startExtendedSession() {
+        let s = WKExtendedRuntimeSession()
+        s.delegate = self
+        s.start()
+        extendedSession = s
+    }
+
+    // MARK: - Background task entry point (fallback when session not active)
+
     func handleBackgroundConnectivity() async {
         await withCheckedContinuation { continuation in
             backgroundContinuation = continuation
-            // Safety timeout — background tasks must not run forever.
             Task {
-                try? await Task.sleep(nanoseconds: 5_000_000_000) // 5 s
+                try? await Task.sleep(nanoseconds: 5_000_000_000)
                 self.resolveBackgroundTask()
             }
         }
@@ -47,11 +60,9 @@ final class WatchSessionManager: NSObject, ObservableObject {
         backgroundContinuation = nil
     }
 
-    // MARK: - Alert handling
+    // MARK: - Haptic
 
     fileprivate func receiveAlert(distanceMetres: Int, pattern: String) {
-        // WKInterfaceDevice.play() works in both foreground AND background tasks.
-        // No notification permission required — haptic fires directly on the Watch.
         Task { await self.playPattern(pattern) }
         lastAlertDistance = distanceMetres
         lastAlertTime = Date()
@@ -98,8 +109,6 @@ final class WatchSessionManager: NSObject, ObservableObject {
         }
     }
 
-    // MARK: - Helpers
-
     private func play(_ type: WKHapticType) {
         WKInterfaceDevice.current().play(type)
     }
@@ -109,11 +118,43 @@ final class WatchSessionManager: NSObject, ObservableObject {
     }
 }
 
+// MARK: - WKExtendedRuntimeSessionDelegate
+
+extension WatchSessionManager: WKExtendedRuntimeSessionDelegate {
+
+    nonisolated func extendedRuntimeSessionDidStart(
+        _ extendedRuntimeSession: WKExtendedRuntimeSession) {
+        Task { @MainActor in
+            WatchSessionManager.shared.extendedSessionActive = true
+        }
+    }
+
+    /// Called a few seconds before the session expires — restart immediately
+    /// so there is no gap in coverage.
+    nonisolated func extendedRuntimeSessionWillExpire(
+        _ extendedRuntimeSession: WKExtendedRuntimeSession) {
+        Task { @MainActor in
+            WatchSessionManager.shared.startExtendedSession()
+        }
+    }
+
+    nonisolated func extendedRuntimeSession(
+        _ extendedRuntimeSession: WKExtendedRuntimeSession,
+        didInvalidateWith reason: WKExtendedRuntimeSessionInvalidationReason,
+        error: Error?) {
+        Task { @MainActor in
+            WatchSessionManager.shared.extendedSessionActive = false
+            // Brief pause then restart — avoids tight loop on persistent errors.
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            WatchSessionManager.shared.startExtendedSession()
+        }
+    }
+}
+
 // MARK: - WCSessionDelegate
 
 extension WatchSessionManager: WCSessionDelegate {
 
-    /// Foreground: iPhone used sendMessage (Watch app was reachable).
     nonisolated func session(_ session: WCSession,
                              didReceiveMessage message: [String: Any]) {
         guard let dist = message["haptic"] as? Int else { return }
@@ -123,7 +164,6 @@ extension WatchSessionManager: WCSessionDelegate {
         }
     }
 
-    /// Background: iPhone used updateApplicationContext (Watch was locked/backgrounded).
     nonisolated func session(_ session: WCSession,
                              didReceiveApplicationContext context: [String: Any]) {
         guard let dist = context["haptic"] as? Int else { return }
@@ -133,7 +173,6 @@ extension WatchSessionManager: WCSessionDelegate {
         }
     }
 
-    /// Legacy fallback: iPhone used transferUserInfo.
     nonisolated func session(_ session: WCSession,
                              didReceiveUserInfo userInfo: [String: Any] = [:]) {
         guard let dist = userInfo["haptic"] as? Int else { return }
