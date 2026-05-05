@@ -1,5 +1,27 @@
 import Foundation
 
+// MARK: - Watch Haptic Pattern
+
+enum WatchHapticPattern: String, CaseIterable, Equatable, Codable {
+    case single      = "single"      // 1 tap
+    case double_     = "double"      // 2 taps
+    case triple      = "triple"      // 3 taps (default)
+    case longBuzz    = "longBuzz"    // 5 rapid taps
+    case urgentPulse = "urgentPulse" // failure burst + 3 taps
+
+    var displayName: String {
+        switch self {
+        case .single:      return "Single Tap"
+        case .double_:     return "Double Tap"
+        case .triple:      return "Triple Buzz"
+        case .longBuzz:    return "Long Buzz ★"
+        case .urgentPulse: return "Urgent Pulse ★"
+        }
+    }
+}
+
+// MARK: - Alert Tone
+
 enum AlertTone: String, CaseIterable, Equatable, Codable {
     case tripleBeep  = "tripleBeep"
     case singleBeep  = "singleBeep"
@@ -24,6 +46,7 @@ struct AlertSettings: Codable, Equatable {
     var minSpeedKmh: Double = 17.0
     var maxSpeedKmh: Double = 100.0
     var tone: AlertTone = .tripleBeep
+    var hapticPattern: WatchHapticPattern = .triple
 
     // Per-band alert radii (metres). Each can be tuned independently.
     var radius17to30: Double  = 50.0   // 17–30 km/h

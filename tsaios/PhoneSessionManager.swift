@@ -17,12 +17,15 @@ final class PhoneSessionManager: NSObject, ObservableObject {
 
     /// Send a haptic command to the paired Apple Watch.
     /// Works whether the iPhone screen is on or off.
-    func sendHaptic(distanceMetres: Int) {
+    func sendHaptic(distanceMetres: Int, pattern: WatchHapticPattern = .triple) {
         guard WCSession.isSupported() else { return }
         let session = WCSession.default
         guard session.activationState == .activated else { return }
 
-        let message: [String: Any] = ["haptic": distanceMetres]
+        let message: [String: Any] = [
+            "haptic":  distanceMetres,
+            "pattern": pattern.rawValue
+        ]
 
         if session.isReachable {
             // Watch app is running (foreground or background task active) — deliver instantly.

@@ -45,6 +45,19 @@ struct SettingsView: View {
                     }
                 }
 
+                Section(header: Text("Watch Haptic Pattern"),
+                        footer: Text("★ patterns are longer and harder to miss.")) {
+                    Picker("Pattern", selection: $vm.settings.hapticPattern) {
+                        ForEach(WatchHapticPattern.allCases, id: \.self) { p in
+                            Text(p.displayName).tag(p)
+                        }
+                    }
+                    .pickerStyle(.inline)
+                    .onChange(of: vm.settings.hapticPattern) { _ in
+                        vm.saveSettings()
+                    }
+                }
+
                 Section(header: Text("Alert Tone"),
                         footer: Text("★ tones are louder and harsher — recommended while driving.")) {
                     Picker("Tone", selection: $vm.settings.tone) {

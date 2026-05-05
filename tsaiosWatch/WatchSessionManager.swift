@@ -2,14 +2,12 @@ import WatchConnectivity
 import WatchKit
 import UserNotifications
 
-/// Receives messages from the paired iPhone and fires a haptic immediately.
+/// Receives messages from the paired iPhone and fires the chosen haptic pattern.
 ///
 /// Two delivery paths:
-///   • sendMessage  (iPhone → Watch app is reachable / foreground)
-///       → WKInterfaceDevice.play(.notification) — instant, no banner
-///   • transferUserInfo (iPhone → Watch app is in background / not running)
-///       → local UNNotification fired on the Watch — triggers haptic + banner
-///         even when the Watch face is showing something else entirely
+///   • sendMessage  → Watch app reachable (foreground): plays pattern directly
+///   • transferUserInfo → Watch app backgrounded: fires a local notification
+///     (watchOS always taps for a notification, even with screen off)
 @MainActor
 final class WatchSessionManager: NSObject, ObservableObject {
 
@@ -20,7 +18,6 @@ final class WatchSessionManager: NSObject, ObservableObject {
 
     private override init() {
         super.init()
-        // Request permission for local notifications (needed for background haptics)
         UNUserNotificationCenter.current()
             .requestAuthorization(options: [.alert, .sound]) { _, _ in }
         guard WCSession.isSupported() else { return }
@@ -30,36 +27,89 @@ final class WatchSessionManager: NSObject, ObservableObject {
 
     // MARK: - Background task entry point
 
-    /// Called by the `.watchConnectivity` background task in WatchApp.swift.
-    /// Stays alive long enough for WCSession delegate callbacks to fire.
     func handleBackgroundConnectivity() async {
-        // The didReceiveUserInfo delegate fires during this task window.
-        // A short sleep ensures we don't exit before the callback runs.
-        try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 s
+        try? await Task.sleep(nanoseconds: 2_000_000_000)
     }
 
-    // MARK: - Alert handling
+    // MARK: - Foreground: play haptic pattern directly
 
-    /// Foreground path: direct haptic via WKInterfaceDevice (silent, instant).
-    fileprivate func receiveAlertForeground(distanceMetres: Int) {
-        WKInterfaceDevice.current().play(.notification)
+    fileprivate func receiveAlertForeground(distanceMetres: Int, pattern: String) {
+        Task { await playPattern(pattern) }
         updateState(distanceMetres: distanceMetres)
     }
 
-    /// Background path: local notification → Watch OS triggers haptic tap
-    /// even when the app is not visible / not running.
-    fileprivate func receiveAlertBackground(distanceMetres: Int) {
+    // MARK: - Background: local notification triggers Watch haptic
+
+    fileprivate func receiveAlertBackground(distanceMetres: Int, pattern: String) {
         let content = UNMutableNotificationContent()
         content.title = "🚦 Signal Ahead"
         content.body  = "\(distanceMetres) m away"
         content.sound = .default
+        if #available(watchOS 7.0, *) {
+            content.interruptionLevel = .timeSensitive
+        }
+        // Embed pattern so if the app wakes it can play additional taps.
+        content.userInfo = ["pattern": pattern, "distance": distanceMetres]
         let request = UNNotificationRequest(
             identifier: "tsaios.alert.\(UUID().uuidString)",
             content: content,
-            trigger: nil          // fire immediately
+            trigger: nil
         )
         UNUserNotificationCenter.current().add(request) { _ in }
         updateState(distanceMetres: distanceMetres)
+    }
+
+    // MARK: - Haptic pattern player
+
+    private func playPattern(_ rawPattern: String) async {
+        switch rawPattern {
+        case "single":
+            play(.notification)
+
+        case "double":
+            play(.notification)
+            try? await sleep(ms: 220)
+            play(.notification)
+
+        case "triple":
+            for i in 0..<3 {
+                if i > 0 { try? await sleep(ms: 200) }
+                play(.notification)
+            }
+
+        case "longBuzz":
+            // 5 rapid taps — ~0.8 s of continuous buzzing
+            for i in 0..<5 {
+                if i > 0 { try? await sleep(ms: 150) }
+                play(.notification)
+            }
+
+        case "urgentPulse":
+            // Failure burst (longer tap) then 3 notification taps
+            play(.failure)
+            try? await sleep(ms: 350)
+            for i in 0..<3 {
+                if i > 0 { try? await sleep(ms: 180) }
+                play(.notification)
+            }
+
+        default:
+            // Fallback: triple
+            for i in 0..<3 {
+                if i > 0 { try? await sleep(ms: 200) }
+                play(.notification)
+            }
+        }
+    }
+
+    // MARK: - Helpers
+
+    private func play(_ type: WKHapticType) {
+        WKInterfaceDevice.current().play(type)
+    }
+
+    private func sleep(ms: UInt64) async throws {
+        try await Task.sleep(nanoseconds: ms * 1_000_000)
     }
 
     private func updateState(distanceMetres: Int) {
@@ -72,22 +122,23 @@ final class WatchSessionManager: NSObject, ObservableObject {
 
 extension WatchSessionManager: WCSessionDelegate {
 
-    /// Fired when iPhone used sendMessage — Watch app was reachable (foreground).
     nonisolated func session(_ session: WCSession,
                              didReceiveMessage message: [String: Any]) {
         guard let dist = message["haptic"] as? Int else { return }
+        let pattern = message["pattern"] as? String ?? "triple"
         Task { @MainActor in
-            WatchSessionManager.shared.receiveAlertForeground(distanceMetres: dist)
+            WatchSessionManager.shared.receiveAlertForeground(distanceMetres: dist,
+                                                              pattern: pattern)
         }
     }
 
-    /// Fired when iPhone used transferUserInfo — Watch app was in background.
-    /// This delegate is the KEY missing piece for background haptics.
     nonisolated func session(_ session: WCSession,
                              didReceiveUserInfo userInfo: [String: Any] = [:]) {
         guard let dist = userInfo["haptic"] as? Int else { return }
+        let pattern = userInfo["pattern"] as? String ?? "triple"
         Task { @MainActor in
-            WatchSessionManager.shared.receiveAlertBackground(distanceMetres: dist)
+            WatchSessionManager.shared.receiveAlertBackground(distanceMetres: dist,
+                                                              pattern: pattern)
         }
     }
 

@@ -171,7 +171,8 @@ final class AlertViewModel: ObservableObject {
         audioService.play(settings.tone)
 
         // Apple Watch — direct WCSession message (works screen-on or screen-off)
-        PhoneSessionManager.shared.sendHaptic(distanceMetres: distanceMetres)
+        PhoneSessionManager.shared.sendHaptic(distanceMetres: distanceMetres,
+                                              pattern: settings.hapticPattern)
 
         // Fallback: local notification mirrors to Watch when iPhone is locked
         WatchHapticService.shared.triggerWatchHaptic(distanceMetres: distanceMetres)
