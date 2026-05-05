@@ -95,23 +95,36 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         env:
           WATCH_PP_NAME: ${{ secrets.WATCH_PROVISIONING_PROFILE_NAME }}
+          IOS_PP_NAME: ${{ secrets.PROVISIONING_PROFILE_NAME }}
         run: |
-          # Build Watch signing args: manual when Watch profile provided,
-          # otherwise disable Watch code-signing so the iOS archive still succeeds.
+          # xcodebuild command-line args do NOT support [sdk=...] conditionals —
+          # those only work in xcconfig files. Write a temporary xcconfig so we
+          # can set per-SDK signing settings without command-line interference.
+          XCCONFIG=$RUNNER_TEMP/signing.xcconfig
+
           if [ -n "$WATCH_PP_NAME" ]; then
-            WATCH_ARGS=(
-              "CODE_SIGN_STYLE[sdk=watchos*]=Manual"
-              "CODE_SIGN_IDENTITY[sdk=watchos*]=Apple Development"
-              "PROVISIONING_PROFILE_SPECIFIER[sdk=watchos*]=${WATCH_PP_NAME}"
-            )
             echo "Watch signing: MANUAL with profile '$WATCH_PP_NAME'"
+            cat > "$XCCONFIG" << EOF
+CODE_SIGN_STYLE = Manual
+CODE_SIGN_IDENTITY = Apple Development
+PROVISIONING_PROFILE_SPECIFIER = ${IOS_PP_NAME}
+CODE_SIGN_STYLE[sdk=watchos*] = Manual
+CODE_SIGN_IDENTITY[sdk=watchos*] = Apple Development
+PROVISIONING_PROFILE_SPECIFIER[sdk=watchos*] = ${WATCH_PP_NAME}
+EOF
           else
-            WATCH_ARGS=(
-              "CODE_SIGNING_REQUIRED[sdk=watchos*]=NO"
-              "CODE_SIGN_IDENTITY[sdk=watchos*]="
-            )
             echo "Watch signing: DISABLED (WATCH_PROVISIONING_PROFILE_NAME not set)"
+            cat > "$XCCONFIG" << EOF
+CODE_SIGN_STYLE = Manual
+CODE_SIGN_IDENTITY = Apple Development
+PROVISIONING_PROFILE_SPECIFIER = ${IOS_PP_NAME}
+CODE_SIGNING_REQUIRED[sdk=watchos*] = NO
+CODE_SIGN_IDENTITY[sdk=watchos*] =
+EOF
           fi
+
+          echo "=== signing.xcconfig ==="
+          cat "$XCCONFIG"
 
           xcodebuild archive \
             -project tsaios.xcodeproj \
@@ -119,11 +132,8 @@ jobs:
             -destination 'generic/platform=iOS' \
             -configuration Release \
             -archivePath $RUNNER_TEMP/tsaios.xcarchive \
-            CODE_SIGN_STYLE=Manual \
-            CODE_SIGN_IDENTITY="Apple Development" \
-            DEVELOPMENT_TEAM="${{ secrets.APPLE_TEAM_ID }}" \
-            PROVISIONING_PROFILE_SPECIFIER="${{ secrets.PROVISIONING_PROFILE_NAME }}" \
-            "${WATCH_ARGS[@]}"
+            -xcconfig "$XCCONFIG" \
+            DEVELOPMENT_TEAM="${{ secrets.APPLE_TEAM_ID }}"
           echo "=== Archive contents ==="
           ls -la $RUNNER_TEMP/tsaios.xcarchive/Products/Applications/ 2>/dev/null || echo "No Applications in archive"
 
