@@ -150,6 +150,11 @@ jobs:
           if [ -z "$WATCH_PP_NAME" ]; then
             echo "No Watch profile — adding skipWatchApp=true to ExportOptions"
             /usr/libexec/PlistBuddy -c "Add :skipWatchApp bool true" $EXPORT_PLIST
+          else
+            echo "Watch profile found — adding to ExportOptions provisioning profiles"
+            /usr/libexec/PlistBuddy \
+              -c "Add :provisioningProfiles:com.poodlesoft.tsaios.watchkitapp string $WATCH_PP_NAME" \
+              $EXPORT_PLIST
           fi
           echo "=== ExportOptions.plist ==="
           cat $EXPORT_PLIST
