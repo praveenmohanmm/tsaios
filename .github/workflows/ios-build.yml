@@ -104,23 +104,23 @@ jobs:
 
           if [ -n "$WATCH_PP_NAME" ]; then
             echo "Watch signing: MANUAL with profile '$WATCH_PP_NAME'"
-            cat > "$XCCONFIG" << EOF
-CODE_SIGN_STYLE = Manual
-CODE_SIGN_IDENTITY = Apple Development
-PROVISIONING_PROFILE_SPECIFIER = ${IOS_PP_NAME}
-CODE_SIGN_STYLE[sdk=watchos*] = Manual
-CODE_SIGN_IDENTITY[sdk=watchos*] = Apple Development
-PROVISIONING_PROFILE_SPECIFIER[sdk=watchos*] = ${WATCH_PP_NAME}
-EOF
+            {
+              echo "CODE_SIGN_STYLE = Manual"
+              echo "CODE_SIGN_IDENTITY = Apple Development"
+              echo "PROVISIONING_PROFILE_SPECIFIER = $IOS_PP_NAME"
+              echo "CODE_SIGN_STYLE[sdk=watchos*] = Manual"
+              echo "CODE_SIGN_IDENTITY[sdk=watchos*] = Apple Development"
+              echo "PROVISIONING_PROFILE_SPECIFIER[sdk=watchos*] = $WATCH_PP_NAME"
+            } > "$XCCONFIG"
           else
             echo "Watch signing: DISABLED (WATCH_PROVISIONING_PROFILE_NAME not set)"
-            cat > "$XCCONFIG" << EOF
-CODE_SIGN_STYLE = Manual
-CODE_SIGN_IDENTITY = Apple Development
-PROVISIONING_PROFILE_SPECIFIER = ${IOS_PP_NAME}
-CODE_SIGNING_REQUIRED[sdk=watchos*] = NO
-CODE_SIGN_IDENTITY[sdk=watchos*] =
-EOF
+            {
+              echo "CODE_SIGN_STYLE = Manual"
+              echo "CODE_SIGN_IDENTITY = Apple Development"
+              echo "PROVISIONING_PROFILE_SPECIFIER = $IOS_PP_NAME"
+              echo "CODE_SIGNING_REQUIRED[sdk=watchos*] = NO"
+              echo "CODE_SIGN_IDENTITY[sdk=watchos*] ="
+            } > "$XCCONFIG"
           fi
 
           echo "=== signing.xcconfig ==="
