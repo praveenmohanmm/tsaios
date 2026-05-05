@@ -2,11 +2,11 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <!-- Allows WKExtendedRuntimeSession to continue running after the Watch
-         screen turns off. Without this entitlement the session expires the
-         instant the user lowers their wrist, which is why haptics were only
-         working when the Watch display was on. -->
-    <key>com.apple.developer.watchkit.background-mode</key>
-    <string>alarm</string>
+    <!-- HealthKit entitlement — required for HKWorkoutSession.
+         An active HKWorkoutSession keeps WCSession.isReachable = true on the
+         iPhone even when the Watch display is off / locked, enabling instant
+         haptic delivery via sendMessage for the full session duration. -->
+    <key>com.apple.developer.healthkit</key>
+    <true/>
 </dict>
 </plist>

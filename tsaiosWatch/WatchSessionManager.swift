@@ -1,15 +1,19 @@
 import WatchConnectivity
 import WatchKit
+import HealthKit
 
-/// Manages WCSession and an WKExtendedRuntimeSession that keeps the Watch app
-/// running in the background.
+/// Manages WCSession and an HKWorkoutSession that keeps the Watch app
+/// running in the background indefinitely.
 ///
-/// When the extended session is active, WCSession.isReachable == true on the
-/// iPhone side, so the iPhone uses sendMessage for instant haptic delivery —
-/// even when the Watch display is off / locked.
+/// Why HKWorkoutSession:
+///   WKExtendedRuntimeSession without a background-mode entitlement expires
+///   the instant the Watch screen turns off. HKWorkoutSession does NOT expire
+///   on wrist-lower and — per Apple docs — keeps WCSession.isReachable = true
+///   on the iPhone side, so sendMessage delivers haptics instantly even with
+///   the Watch display off / locked.
 ///
-/// The user opens the Watch app once before driving; the session auto-restarts
-/// whenever it is about to expire.
+/// Usage: open the Alert ME Watch app once before driving. The session starts
+/// automatically and the green dot confirms coverage.
 @MainActor
 final class WatchSessionManager: NSObject, ObservableObject {
 
@@ -19,7 +23,8 @@ final class WatchSessionManager: NSObject, ObservableObject {
     @Published var lastAlertTime: Date?
     @Published var extendedSessionActive = false
 
-    private var extendedSession: WKExtendedRuntimeSession?
+    private let healthStore = HKHealthStore()
+    private var workoutSession: HKWorkoutSession?
 
     /// Suspends handleBackgroundConnectivity() until the delegate fires.
     private var backgroundContinuation: CheckedContinuation<Void, Never>?
@@ -31,16 +36,36 @@ final class WatchSessionManager: NSObject, ObservableObject {
         WCSession.default.activate()
     }
 
-    // MARK: - Extended runtime session
+    // MARK: - Workout session (background keepalive)
 
-    /// Start (or restart) the extended runtime session.
-    /// Must be called while the app is in the foreground, or from within
-    /// an already-running extended session (e.g. on willExpire).
     func startExtendedSession() {
-        let s = WKExtendedRuntimeSession()
-        s.delegate = self
-        s.start()
-        extendedSession = s
+        guard HKHealthStore.isHealthDataAvailable() else { return }
+        // Request minimal HealthKit auth — we share/read nothing, we only
+        // need the session for background execution.
+        healthStore.requestAuthorization(toShare: [HKObjectType.workoutType()],
+                                         read: []) { [weak self] granted, _ in
+            guard granted else { return }
+            DispatchQueue.main.async { self?.beginWorkout() }
+        }
+    }
+
+    private func beginWorkout() {
+        // Stop any existing session first.
+        if let existing = workoutSession {
+            healthStore.end(existing)
+        }
+        let config = HKWorkoutConfiguration()
+        config.activityType = .other        // generic — no fitness framing shown
+        config.locationType = .outdoor
+        do {
+            let session = try HKWorkoutSession(healthStore: healthStore,
+                                               configuration: config)
+            session.delegate = self
+            workoutSession = session
+            healthStore.start(session, at: Date())
+        } catch {
+            print("WatchSessionManager: HKWorkoutSession failed to start — \(error)")
+        }
     }
 
     // MARK: - Background task entry point (fallback when session not active)
@@ -60,7 +85,7 @@ final class WatchSessionManager: NSObject, ObservableObject {
         backgroundContinuation = nil
     }
 
-    // MARK: - Haptic
+    // MARK: - Alert handling
 
     fileprivate func receiveAlert(distanceMetres: Int, pattern: String) {
         Task { await self.playPattern(pattern) }
@@ -118,35 +143,26 @@ final class WatchSessionManager: NSObject, ObservableObject {
     }
 }
 
-// MARK: - WKExtendedRuntimeSessionDelegate
+// MARK: - HKWorkoutSessionDelegate
 
-extension WatchSessionManager: WKExtendedRuntimeSessionDelegate {
+extension WatchSessionManager: HKWorkoutSessionDelegate {
 
-    nonisolated func extendedRuntimeSessionDidStart(
-        _ extendedRuntimeSession: WKExtendedRuntimeSession) {
+    nonisolated func workoutSession(_ workoutSession: HKWorkoutSession,
+                                    didChangeTo toState: HKWorkoutSessionState,
+                                    from fromState: HKWorkoutSessionState,
+                                    date: Date) {
         Task { @MainActor in
-            WatchSessionManager.shared.extendedSessionActive = true
+            WatchSessionManager.shared.extendedSessionActive = (toState == .running)
         }
     }
 
-    /// Called a few seconds before the session expires — restart immediately
-    /// so there is no gap in coverage.
-    nonisolated func extendedRuntimeSessionWillExpire(
-        _ extendedRuntimeSession: WKExtendedRuntimeSession) {
-        Task { @MainActor in
-            WatchSessionManager.shared.startExtendedSession()
-        }
-    }
-
-    nonisolated func extendedRuntimeSession(
-        _ extendedRuntimeSession: WKExtendedRuntimeSession,
-        didInvalidateWith reason: WKExtendedRuntimeSessionInvalidationReason,
-        error: Error?) {
+    nonisolated func workoutSession(_ workoutSession: HKWorkoutSession,
+                                    didFailWithError error: Error) {
         Task { @MainActor in
             WatchSessionManager.shared.extendedSessionActive = false
-            // Brief pause then restart — avoids tight loop on persistent errors.
+            // Restart after a brief pause.
             try? await Task.sleep(nanoseconds: 2_000_000_000)
-            WatchSessionManager.shared.startExtendedSession()
+            WatchSessionManager.shared.beginWorkout()
         }
     }
 }
