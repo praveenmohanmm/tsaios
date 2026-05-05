@@ -16,6 +16,7 @@ struct ContentView: View {
                 ScrollView {
                     VStack(spacing: 12) {
                         headerCard
+                        connectionBanner
                         speedBanner
                         alertBanner
                         nearestSignalCard
@@ -74,6 +75,30 @@ struct ContentView: View {
         .padding()
         .background(cardBackground)
         .cornerRadius(12)
+    }
+
+    // MARK: - Connection banner
+
+    @ViewBuilder
+    private var connectionBanner: some View {
+        if !vm.connectionAvailable {
+            HStack(spacing: 10) {
+                Image(systemName: "bolt.slash.fill")
+                    .foregroundColor(.yellow)
+                Text("Connect charger or CarPlay to start scanning")
+                    .font(.subheadline)
+                    .foregroundColor(.white)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.yellow.opacity(0.15))
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(Color.yellow.opacity(0.7), lineWidth: 1)
+            )
+            .cornerRadius(10)
+        }
     }
 
     // MARK: - Speed banner
@@ -168,29 +193,69 @@ struct ContentView: View {
 
     private var controlButtons: some View {
         HStack(spacing: 16) {
+            // START — active (green) when not tracking; muted grey when already tracking
             Button {
                 vm.startTracking()
             } label: {
-                Label("Start", systemImage: "play.fill")
-                    .font(.subheadline.bold())
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(vm.isTracking ? Color.green.opacity(0.3) : Color.green)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
+                HStack(spacing: 8) {
+                    Image(systemName: "play.fill")
+                    Text("Start")
+                        .fontWeight(.bold)
+                }
+                .font(.subheadline)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(
+                    vm.isTracking
+                        ? Color(white: 0.25)          // disabled: dark grey slab
+                        : Color.green
+                )
+                .foregroundColor(
+                    vm.isTracking
+                        ? Color(white: 0.45)          // disabled: mid-grey text
+                        : .white
+                )
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(
+                            vm.isTracking ? Color(white: 0.35) : Color.green,
+                            lineWidth: vm.isTracking ? 1 : 0
+                        )
+                )
             }
             .disabled(vm.isTracking)
 
+            // STOP — active (red) when tracking; muted grey when already stopped
             Button {
                 vm.stopTracking()
             } label: {
-                Label("Stop", systemImage: "stop.fill")
-                    .font(.subheadline.bold())
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(vm.isTracking ? Color.red : Color.red.opacity(0.3))
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
+                HStack(spacing: 8) {
+                    Image(systemName: "stop.fill")
+                    Text("Stop")
+                        .fontWeight(.bold)
+                }
+                .font(.subheadline)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(
+                    vm.isTracking
+                        ? Color.red
+                        : Color(white: 0.25)          // disabled: dark grey slab
+                )
+                .foregroundColor(
+                    vm.isTracking
+                        ? .white
+                        : Color(white: 0.45)          // disabled: mid-grey text
+                )
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(
+                            vm.isTracking ? Color.red : Color(white: 0.35),
+                            lineWidth: vm.isTracking ? 0 : 1
+                        )
+                )
             }
             .disabled(!vm.isTracking)
         }

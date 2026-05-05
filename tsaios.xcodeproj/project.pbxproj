@@ -25,6 +25,7 @@
 		CAFECAFE00000000BF000024 /* WatchContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAFECAFE00000000FR000023 /* WatchContentView.swift */; };
 		CAFECAFE00000000BF000025 /* Watch Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CAFECAFE00000000FR000024 /* Watch Assets.xcassets */; };
 		CAFECAFE00000000BF000026 /* PhoneSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAFECAFE00000000FR000025 /* PhoneSessionManager.swift */; };
+		CAFECAFE00000000BF000028 /* ConnectionMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAFECAFE00000000FR000028 /* ConnectionMonitor.swift */; };
 		CAFECAFE00000000BF000027 /* tsaiosWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = CAFECAFE00000000FR000026 /* tsaiosWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
@@ -72,6 +73,7 @@
 		CAFECAFE00000000FR000023 /* WatchContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchContentView.swift; sourceTree = "<group>"; };
 		CAFECAFE00000000FR000024 /* Watch Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		CAFECAFE00000000FR000025 /* PhoneSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneSessionManager.swift; sourceTree = "<group>"; };
+		CAFECAFE00000000FR000028 /* ConnectionMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionMonitor.swift; sourceTree = "<group>"; };
 		CAFECAFE00000000FR000026 /* tsaiosWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = tsaiosWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -118,6 +120,7 @@
 				CAFECAFE00000000FR000008 /* AudioService.swift */,
 				CAFECAFE00000000FR000013 /* WatchHapticService.swift */,
 				CAFECAFE00000000FR000025 /* PhoneSessionManager.swift */,
+				CAFECAFE00000000FR000028 /* ConnectionMonitor.swift */,
 				CAFECAFE00000000FR000009 /* data.json */,
 				CAFECAFE00000000FR000010 /* Info.plist */,
 				CAFECAFE00000000FR000011 /* Assets.xcassets */,
@@ -264,6 +267,7 @@
 				CAFECAFE00000000BF000008 /* AudioService.swift in Sources */,
 				CAFECAFE00000000BF000011 /* WatchHapticService.swift in Sources */,
 				CAFECAFE00000000BF000026 /* PhoneSessionManager.swift in Sources */,
+				CAFECAFE00000000BF000028 /* ConnectionMonitor.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
