@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Allows WKExtendedRuntimeSession to continue running after the Watch
+         screen turns off. Without this entitlement the session expires the
+         instant the user lowers their wrist, which is why haptics were only
+         working when the Watch display was on. -->
+    <key>com.apple.developer.watchkit.background-mode</key>
+    <string>alarm</string>
+</dict>
+</plist>
