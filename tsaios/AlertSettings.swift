@@ -1,15 +1,21 @@
 import Foundation
 
 enum AlertTone: String, CaseIterable, Equatable, Codable {
-    case tripleBeep = "tripleBeep"
-    case singleBeep = "singleBeep"
-    case alertChime = "alertChime"
+    case tripleBeep  = "tripleBeep"
+    case singleBeep  = "singleBeep"
+    case alertChime  = "alertChime"
+    case siren       = "siren"       // ★ loud: rising-falling frequency sweep
+    case klaxon      = "klaxon"      // ★ loud: harsh alternating two-tone
+    case rapidAlarm  = "rapidAlarm"  // ★ loud: 6 rapid high-pitched blasts
 
     var displayName: String {
         switch self {
-        case .tripleBeep: return "Triple Beep"
-        case .singleBeep: return "Single Beep"
-        case .alertChime: return "Alert Chime"
+        case .tripleBeep:  return "Triple Beep"
+        case .singleBeep:  return "Single Beep"
+        case .alertChime:  return "Alert Chime"
+        case .siren:       return "Siren ★"
+        case .klaxon:      return "Klaxon ★"
+        case .rapidAlarm:  return "Rapid Alarm ★"
         }
     }
 }

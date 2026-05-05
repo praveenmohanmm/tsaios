@@ -45,13 +45,14 @@ struct SettingsView: View {
                     }
                 }
 
-                Section(header: Text("Alert Tone")) {
+                Section(header: Text("Alert Tone"),
+                        footer: Text("★ tones are louder and harsher — recommended while driving.")) {
                     Picker("Tone", selection: $vm.settings.tone) {
                         ForEach(AlertTone.allCases, id: \.self) { tone in
                             Text(tone.displayName).tag(tone)
                         }
                     }
-                    .pickerStyle(.segmented)
+                    .pickerStyle(.inline)
                     .onChange(of: vm.settings.tone) { _ in
                         vm.saveSettings()
                     }
