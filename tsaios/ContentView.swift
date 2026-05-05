@@ -83,9 +83,9 @@ struct ContentView: View {
     private var connectionBanner: some View {
         if !vm.connectionAvailable {
             HStack(spacing: 10) {
-                Image(systemName: "bolt.slash.fill")
+                Image(systemName: "car.fill")
                     .foregroundColor(.yellow)
-                Text("Connect charger or CarPlay to start scanning")
+                Text("Connect CarPlay to start scanning")
                     .font(.subheadline)
                     .foregroundColor(.white)
                     .fixedSize(horizontal: false, vertical: true)

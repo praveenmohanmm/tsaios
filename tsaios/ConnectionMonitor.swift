@@ -2,13 +2,10 @@ import UIKit
 import AVFoundation
 import Combine
 
-/// Monitors charger and CarPlay connectivity.
+/// Monitors CarPlay connectivity only.
 ///
-/// • Charger  — UIDevice battery state (.charging / .full)
-/// • CarPlay  — UIScreen connect/disconnect (CarPlay presents as an external screen)
-///
-/// When neither is active, `isConnected` becomes false and the ViewModel
-/// stops scanning and speaks the alert via AVSpeechSynthesizer.
+/// CarPlay presents as an external UIScreen, so UIScreen connect/disconnect
+/// notifications are the signal source. Charger state is intentionally ignored.
 @MainActor
 final class ConnectionMonitor {
 
@@ -16,49 +13,32 @@ final class ConnectionMonitor {
 
     @Published private(set) var isConnected: Bool = false
 
-    // MARK: - Private state
-
-    private var chargerConnected: Bool = false { didSet { refresh() } }
-    private var carPlayConnected: Bool = false { didSet { refresh() } }
-
     private let synthesizer = AVSpeechSynthesizer()
     private var cancellables = Set<AnyCancellable>()
 
     // MARK: - Init
 
     init() {
-        UIDevice.current.isBatteryMonitoringEnabled = true
-        chargerConnected = isCharging()
-        carPlayConnected = UIScreen.screens.count > 1
+        // Check whether CarPlay is already active at launch
+        isConnected = UIScreen.screens.count > 1
 
-        // Charger plugged / unplugged
-        NotificationCenter.default
-            .publisher(for: UIDevice.batteryStateDidChangeNotification)
-            .receive(on: RunLoop.main)
-            .sink { [weak self] _ in
-                self?.chargerConnected = self?.isCharging() ?? false
-            }
-            .store(in: &cancellables)
-
-        // CarPlay / external screen connected
+        // CarPlay connected
         NotificationCenter.default
             .publisher(for: UIScreen.didConnectNotification)
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
-                self?.carPlayConnected = true
+                self?.isConnected = true
             }
             .store(in: &cancellables)
 
-        // CarPlay / external screen disconnected
+        // CarPlay disconnected
         NotificationCenter.default
             .publisher(for: UIScreen.didDisconnectNotification)
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
-                self?.carPlayConnected = UIScreen.screens.count > 1
+                self?.isConnected = UIScreen.screens.count > 1
             }
             .store(in: &cancellables)
-
-        refresh()
     }
 
     // MARK: - TTS announcement
@@ -70,16 +50,5 @@ final class ConnectionMonitor {
         utterance.volume = 1.0
         synthesizer.stopSpeaking(at: .immediate)
         synthesizer.speak(utterance)
-    }
-
-    // MARK: - Helpers
-
-    private func isCharging() -> Bool {
-        let s = UIDevice.current.batteryState
-        return s == .charging || s == .full
-    }
-
-    private func refresh() {
-        isConnected = chargerConnected || carPlayConnected
     }
 }

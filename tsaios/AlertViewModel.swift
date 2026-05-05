@@ -101,13 +101,13 @@ final class AlertViewModel: ObservableObject {
                     // Only auto-start if signals are loaded and we're not already tracking.
                     guard self.signalCount > 0, !self.isTracking else { return }
                     self.connectionMonitor.announce(
-                        "Starting Traffic signal scanning. Charger or CarPlay connected.")
+                        "Starting Traffic signal scanning. CarPlay connected.")
                     self.startTracking()
                 } else {
                     guard self.isTracking else { return }
                     self.stopTracking()
                     self.connectionMonitor.announce(
-                        "Stopping Traffic signal scanning since the charger or Car Play is not connected.")
+                        "Stopping Traffic signal scanning since CarPlay is not connected.")
                 }
             }
             .store(in: &cancellables)
