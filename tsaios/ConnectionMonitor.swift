@@ -1,11 +1,12 @@
-import UIKit
 import AVFoundation
+import UIKit
 import Combine
 
-/// Monitors CarPlay connectivity only.
+/// Detects Apple CarPlay by watching AVAudioSession route changes.
 ///
-/// CarPlay presents as an external UIScreen, so UIScreen connect/disconnect
-/// notifications are the signal source. Charger state is intentionally ignored.
+/// When CarPlay connects, the audio route gains a `.carAudio` output port.
+/// When CarPlay disconnects, that port disappears. This fires reliably for
+/// both wired and wireless CarPlay without requiring a CarPlay entitlement.
 @MainActor
 final class ConnectionMonitor {
 
@@ -19,24 +20,14 @@ final class ConnectionMonitor {
     // MARK: - Init
 
     init() {
-        // Check whether CarPlay is already active at launch
-        isConnected = UIScreen.screens.count > 1
+        // Snapshot current state at launch (e.g. app opened while already in CarPlay)
+        isConnected = Self.carPlayActive()
 
-        // CarPlay connected
         NotificationCenter.default
-            .publisher(for: UIScreen.didConnectNotification)
+            .publisher(for: AVAudioSession.routeChangeNotification)
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
-                self?.isConnected = true
-            }
-            .store(in: &cancellables)
-
-        // CarPlay disconnected
-        NotificationCenter.default
-            .publisher(for: UIScreen.didDisconnectNotification)
-            .receive(on: RunLoop.main)
-            .sink { [weak self] _ in
-                self?.isConnected = UIScreen.screens.count > 1
+                self?.isConnected = Self.carPlayActive()
             }
             .store(in: &cancellables)
     }
@@ -50,5 +41,14 @@ final class ConnectionMonitor {
         utterance.volume = 1.0
         synthesizer.stopSpeaking(at: .immediate)
         synthesizer.speak(utterance)
+    }
+
+    // MARK: - Private
+
+    /// Returns true when CarPlay is the active audio output.
+    /// `.carAudio` is unique to CarPlay — Bluetooth audio uses `.bluetoothA2DP`.
+    private static func carPlayActive() -> Bool {
+        AVAudioSession.sharedInstance().currentRoute.outputs
+            .contains { $0.portType == .carAudio }
     }
 }
