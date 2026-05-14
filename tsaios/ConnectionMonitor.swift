@@ -4,9 +4,14 @@ import Combine
 
 /// Detects Apple CarPlay by watching AVAudioSession route changes.
 ///
-/// When CarPlay connects, the audio route gains a `.carAudio` output port.
-/// When CarPlay disconnects, that port disappears. This fires reliably for
-/// both wired and wireless CarPlay without requiring a CarPlay entitlement.
+/// CarPlay always registers a `.carAudio` output port when connected.
+/// Three complementary signals are combined for reliability:
+///   1. AVAudioSession.routeChangeNotification  — primary, with a short
+///      settle delay because the route isn't always final at notification time.
+///   2. UIApplication.didBecomeActiveNotification — re-checks if the app
+///      was suspended while CarPlay connected / disconnected.
+///   3. 3-second polling fallback — catches wireless CarPlay and any edge
+///      cases where neither notification fires reliably.
 @MainActor
 final class ConnectionMonitor {
 
@@ -20,15 +25,33 @@ final class ConnectionMonitor {
     // MARK: - Init
 
     init() {
-        // Snapshot current state at launch (e.g. app opened while already in CarPlay)
         isConnected = Self.carPlayActive()
 
+        // 1. Audio route change — fires on CarPlay connect / disconnect.
+        //    Wait 0.5 s for the route to fully settle before reading it.
         NotificationCenter.default
             .publisher(for: AVAudioSession.routeChangeNotification)
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
-                self?.isConnected = Self.carPlayActive()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    self?.refresh()
+                }
             }
+            .store(in: &cancellables)
+
+        // 2. App comes to foreground — catches connect / disconnect events
+        //    that happened while the app was suspended.
+        NotificationCenter.default
+            .publisher(for: UIApplication.didBecomeActiveNotification)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.refresh() }
+            .store(in: &cancellables)
+
+        // 3. Polling fallback every 3 s — handles wireless CarPlay and any
+        //    case where neither notification fires in time.
+        Timer.publish(every: 3.0, on: .main, in: .common)
+            .autoconnect()
+            .sink { [weak self] _ in self?.refresh() }
             .store(in: &cancellables)
     }
 
@@ -45,8 +68,13 @@ final class ConnectionMonitor {
 
     // MARK: - Private
 
-    /// Returns true when CarPlay is the active audio output.
-    /// `.carAudio` is unique to CarPlay — Bluetooth audio uses `.bluetoothA2DP`.
+    private func refresh() {
+        let active = Self.carPlayActive()
+        guard active != isConnected else { return }   // no-op if unchanged
+        isConnected = active
+    }
+
+    /// `.carAudio` is unique to CarPlay — Bluetooth uses `.bluetoothA2DP`.
     private static func carPlayActive() -> Bool {
         AVAudioSession.sharedInstance().currentRoute.outputs
             .contains { $0.portType == .carAudio }
