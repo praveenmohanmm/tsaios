@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ContentView: View {
-    @StateObject var vm = AlertViewModel()
+    @ObservedObject var vm = AlertViewModel.shared
     @State private var showSettings = false
 
     // Dark navy theme

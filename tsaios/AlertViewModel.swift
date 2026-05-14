@@ -5,6 +5,10 @@ import UIKit
 @MainActor
 final class AlertViewModel: ObservableObject {
 
+    /// Shared instance used by App Intents (Siri) so they reach the live
+    /// in-process state rather than spinning up a separate instance.
+    static let shared = AlertViewModel()
+
     // MARK: - Published state
 
     @Published var isTracking: Bool = false
