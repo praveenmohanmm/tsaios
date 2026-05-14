@@ -50,7 +50,6 @@ final class AlertViewModel: ObservableObject {
 
     init() {
         locationManager.requestPermission()
-        WatchHapticService.shared.requestPermission()
         _ = PhoneSessionManager.shared   // activate WCSession at launch
         subscribeToLocation()
         subscribeToConnection()
@@ -204,12 +203,9 @@ final class AlertViewModel: ObservableObject {
         // Audio (plays in background via UIBackgroundModes: audio)
         audioService.play(settings.tone)
 
-        // Apple Watch — direct WCSession message (works screen-on or screen-off)
+        // Apple Watch — direct WCSession message
         PhoneSessionManager.shared.sendHaptic(distanceMetres: distanceMetres,
                                               pattern: settings.hapticPattern)
-
-        // Fallback: local notification mirrors to Watch when iPhone is locked
-        WatchHapticService.shared.triggerWatchHaptic(distanceMetres: distanceMetres)
     }
 
     private func clearAlertState() {
