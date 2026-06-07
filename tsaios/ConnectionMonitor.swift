@@ -68,10 +68,33 @@ final class ConnectionMonitor {
 
     // MARK: - Private
 
+    /// Pending work item that will flip isConnected to false.
+    /// Cancelled if CarPlay re-appears before the grace period expires.
+    private var disconnectWork: DispatchWorkItem?
+
     private func refresh() {
-        let active = Self.carPlayActive()
-        guard active != isConnected else { return }   // no-op if unchanged
-        isConnected = active
+        if Self.carPlayActive() {
+            // CarPlay active — connect immediately and cancel any pending disconnect.
+            disconnectWork?.cancel()
+            disconnectWork = nil
+            guard !isConnected else { return }
+            isConnected = true
+        } else {
+            // CarPlay appears inactive.
+            // Don't disconnect immediately — audio apps (radio, music) briefly
+            // flip the route when they start, causing false disconnects.
+            // Wait 5 s and only disconnect if CarPlay is still gone.
+            guard disconnectWork == nil else { return }   // debounce already armed
+            let work = DispatchWorkItem { [weak self] in
+                guard let self else { return }
+                if !Self.carPlayActive() {
+                    self.isConnected = false
+                }
+                self.disconnectWork = nil
+            }
+            disconnectWork = work
+            DispatchQueue.main.asyncAfter(deadline: .now() + 5.0, execute: work)
+        }
     }
 
     /// `.carAudio` is unique to CarPlay — Bluetooth uses `.bluetoothA2DP`.
