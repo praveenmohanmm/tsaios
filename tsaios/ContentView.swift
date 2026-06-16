@@ -16,7 +16,6 @@ struct ContentView: View {
                 ScrollView {
                     VStack(spacing: 12) {
                         headerCard
-                        connectionBanner
                         speedBanner
                         alertBanner
                         nearestSignalCard
@@ -75,30 +74,6 @@ struct ContentView: View {
         .padding()
         .background(cardBackground)
         .cornerRadius(12)
-    }
-
-    // MARK: - Connection banner
-
-    @ViewBuilder
-    private var connectionBanner: some View {
-        if !vm.connectionAvailable {
-            HStack(spacing: 10) {
-                Image(systemName: "car.fill")
-                    .foregroundColor(.yellow)
-                Text("Connect CarPlay to start scanning")
-                    .font(.subheadline)
-                    .foregroundColor(.white)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding()
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.yellow.opacity(0.15))
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(Color.yellow.opacity(0.7), lineWidth: 1)
-            )
-            .cornerRadius(10)
-        }
     }
 
     // MARK: - Speed banner

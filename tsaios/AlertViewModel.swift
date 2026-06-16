@@ -22,7 +22,6 @@ final class AlertViewModel: ObservableObject {
     @Published var alertBannerColor: AlertBannerColor = .none
     @Published var speedStatus: SpeedStatus = .ok
     @Published var settings: AlertSettings = AlertSettings.load()
-    @Published var connectionAvailable: Bool = false
 
     // MARK: - Alert banner color
 
@@ -39,7 +38,6 @@ final class AlertViewModel: ObservableObject {
     private let locationManager = LocationManager()
     private let signalService = TrafficSignalService()
     private let audioService = AudioService()
-    private let connectionMonitor = ConnectionMonitor()
     private var cancellables = Set<AnyCancellable>()
 
     /// IDs of signals that have fired and must leave (radius + 50m) before alerting again.
@@ -52,7 +50,6 @@ final class AlertViewModel: ObservableObject {
         locationManager.requestPermission()
         _ = PhoneSessionManager.shared   // activate WCSession at launch
         subscribeToLocation()
-        subscribeToConnection()
     }
 
     // MARK: - Public API
@@ -60,10 +57,6 @@ final class AlertViewModel: ObservableObject {
     func loadAndStart() async {
         await signalService.loadSignals()
         signalCount = signalService.signals.count
-        // Only auto-start if a charger or CarPlay is already connected.
-        if connectionMonitor.isConnected {
-            startTracking()
-        }
     }
 
     func startTracking() {
@@ -90,30 +83,6 @@ final class AlertViewModel: ObservableObject {
     /// "Test Alert" button on the Settings screen.
     func testAlert() {
         fireAlert(distanceMetres: 50)
-    }
-
-    // MARK: - Connection subscription (charger / CarPlay)
-
-    private func subscribeToConnection() {
-        connectionMonitor.$isConnected
-            .receive(on: RunLoop.main)
-            .sink { [weak self] connected in
-                guard let self else { return }
-                self.connectionAvailable = connected
-                if connected {
-                    // Only auto-start if signals are loaded and we're not already tracking.
-                    guard self.signalCount > 0, !self.isTracking else { return }
-                    self.connectionMonitor.announce(
-                        "Starting Traffic signal scanning. CarPlay connected.")
-                    self.startTracking()
-                } else {
-                    guard self.isTracking else { return }
-                    self.stopTracking()
-                    self.connectionMonitor.announce(
-                        "Stopping Traffic signal scanning since CarPlay is not connected.")
-                }
-            }
-            .store(in: &cancellables)
     }
 
     // MARK: - Location subscription
