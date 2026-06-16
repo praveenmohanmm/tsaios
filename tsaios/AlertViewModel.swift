@@ -1,6 +1,7 @@
 import Foundation
 import Combine
 import UIKit
+import AVFoundation
 
 @MainActor
 final class AlertViewModel: ObservableObject {
@@ -44,6 +45,13 @@ final class AlertViewModel: ObservableObject {
     private var alertedSignalIds = Set<Int>()
     private var processingUpdate = false
 
+    /// Fires after 15 minutes of continuous slow/stopped speed to auto-stop scanning.
+    private var idleStopTask: Task<Void, Never>?
+    private let synthesizer = AVSpeechSynthesizer()
+
+    /// How long the user must be stationary/slow before scanning stops (15 minutes).
+    private let idleStopInterval: TimeInterval = 15 * 60
+
     // MARK: - Init
 
     init() {
@@ -68,6 +76,7 @@ final class AlertViewModel: ObservableObject {
 
     func stopTracking() {
         guard isTracking else { return }
+        cancelIdleTimer()
         isTracking = false
         UIApplication.shared.isIdleTimerDisabled = false
         locationManager.stopUpdating()
@@ -116,13 +125,16 @@ final class AlertViewModel: ObservableObject {
         guard let radius = settings.alertRadius(forSpeedKmh: kmh) else {
             if kmh < settings.minSpeedKmh {
                 speedStatus = .tooSlow
+                armIdleTimer()   // start 15-min countdown while not driving
             } else {
                 speedStatus = .tooFast
+                cancelIdleTimer()
             }
             clearAlertState()
             return
         }
         speedStatus = .ok
+        cancelIdleTimer()        // moving at driving speed — reset countdown
 
         // Update nearest signal
         if let closest = signalService.getClosest(lat: lat, lon: lon) {
@@ -175,6 +187,35 @@ final class AlertViewModel: ObservableObject {
         // Apple Watch — direct WCSession message
         PhoneSessionManager.shared.sendHaptic(distanceMetres: distanceMetres,
                                               pattern: settings.hapticPattern)
+    }
+
+    // MARK: - Idle auto-stop
+
+    private func armIdleTimer() {
+        guard idleStopTask == nil else { return }   // already counting down
+        idleStopTask = Task {
+            do {
+                try await Task.sleep(nanoseconds: UInt64(idleStopInterval * 1_000_000_000))
+            } catch {
+                return   // cancelled — user started driving again or stopped manually
+            }
+            stopTracking()
+            speak("You have not been driving for 15 minutes. Stopping traffic signal scanning.")
+        }
+    }
+
+    private func cancelIdleTimer() {
+        idleStopTask?.cancel()
+        idleStopTask = nil
+    }
+
+    private func speak(_ text: String) {
+        let utterance = AVSpeechUtterance(string: text)
+        utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
+        utterance.rate = AVSpeechUtteranceDefaultSpeechRate * 0.88
+        utterance.volume = 1.0
+        synthesizer.stopSpeaking(at: .immediate)
+        synthesizer.speak(utterance)
     }
 
     private func clearAlertState() {
