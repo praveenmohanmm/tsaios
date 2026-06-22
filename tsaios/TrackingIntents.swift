@@ -6,7 +6,8 @@ struct StartTrackingIntent: AppIntent {
 
     static var title: LocalizedStringResource = "Start Traffic Signal Scanning"
     static var description = IntentDescription(
-        "Starts scanning for nearby traffic signals and alerts you when one is ahead.")
+        "Starts scanning for nearby traffic signals and alerts you when one is ahead. " +
+        "Restarts cleanly even if scanning is already running.")
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
@@ -14,10 +15,7 @@ struct StartTrackingIntent: AppIntent {
         guard vm.signalCount > 0 else {
             return .result(dialog: "Signal data is still loading. Please wait a moment and try again.")
         }
-        guard !vm.isTracking else {
-            return .result(dialog: "Traffic signal scanning is already active.")
-        }
-        vm.startTracking()
+        vm.restartTracking()   // always a fresh start, even if already tracking
         return .result(dialog: "Starting traffic signal scanning.")
     }
 }

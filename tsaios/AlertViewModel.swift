@@ -39,6 +39,7 @@ final class AlertViewModel: ObservableObject {
     private let locationManager = LocationManager()
     private let signalService = TrafficSignalService()
     private let audioService = AudioService()
+    private let connectionMonitor = ConnectionMonitor()
     private var cancellables = Set<AnyCancellable>()
 
     /// IDs of signals that have fired and must leave (radius + 50m) before alerting again.
@@ -58,6 +59,7 @@ final class AlertViewModel: ObservableObject {
         locationManager.requestPermission()
         _ = PhoneSessionManager.shared   // activate WCSession at launch
         subscribeToLocation()
+        subscribeToConnection()
     }
 
     // MARK: - Public API
@@ -69,6 +71,7 @@ final class AlertViewModel: ObservableObject {
 
     func startTracking() {
         guard !isTracking else { return }
+        alertedSignalIds.removeAll()   // fresh session — don't suppress alerts from a prior run
         isTracking = true
         UIApplication.shared.isIdleTimerDisabled = true
         locationManager.startUpdating()
@@ -83,6 +86,15 @@ final class AlertViewModel: ObservableObject {
         clearAlertState()
     }
 
+    /// Stops (if running) and starts again with a clean alert state.
+    /// Used by "Start Scanning" so repeated invocations always re-arm fully.
+    func restartTracking() {
+        if isTracking {
+            stopTracking()
+        }
+        startTracking()
+    }
+
     func saveSettings() {
         settings.save()
     }
@@ -92,6 +104,19 @@ final class AlertViewModel: ObservableObject {
     /// "Test Alert" button on the Settings screen.
     func testAlert() {
         fireAlert(distanceMetres: 50)
+    }
+
+    // MARK: - Connection subscription (CarPlay connect only — disconnect is ignored)
+
+    private func subscribeToConnection() {
+        connectionMonitor.$isConnected
+            .receive(on: RunLoop.main)
+            .sink { [weak self] connected in
+                guard let self, connected else { return }
+                guard self.signalCount > 0, !self.isTracking else { return }
+                self.startTracking()
+            }
+            .store(in: &cancellables)
     }
 
     // MARK: - Location subscription
