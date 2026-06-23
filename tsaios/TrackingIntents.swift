@@ -6,8 +6,7 @@ struct StartTrackingIntent: AppIntent {
 
     static var title: LocalizedStringResource = "Start Traffic Signal Scanning"
     static var description = IntentDescription(
-        "Starts scanning for nearby traffic signals and alerts you when one is ahead. " +
-        "Restarts cleanly even if scanning is already running.")
+        "Starts scanning for nearby traffic signals and alerts you when one is ahead. Restarts cleanly even if scanning is already running.")
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
