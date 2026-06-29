@@ -67,6 +67,12 @@ final class AlertViewModel: ObservableObject {
     func loadAndStart() async {
         await signalService.loadSignals()
         signalCount = signalService.signals.count
+        // CarPlay may already have been connected before signals finished
+        // loading (e.g. app opened while already in the car) — the one-time
+        // connect notification would have been missed by subscribeToConnection.
+        if connectionMonitor.isConnected, !isTracking {
+            startTracking()
+        }
     }
 
     func startTracking() {
