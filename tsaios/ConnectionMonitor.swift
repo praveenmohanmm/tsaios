@@ -29,8 +29,12 @@ final class ConnectionMonitor {
             .publisher(for: AVAudioSession.routeChangeNotification)
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    self?.refresh()
+                // Check at multiple delays: wired CarPlay is fast (~0.5s),
+                // wireless CarPlay can take 2-5s to finalise the route.
+                for delay in [0.5, 1.5, 3.5, 6.0] {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                        self?.refresh()
+                    }
                 }
             }
             .store(in: &cancellables)
@@ -41,7 +45,9 @@ final class ConnectionMonitor {
             .sink { [weak self] _ in self?.refresh() }
             .store(in: &cancellables)
 
-        Timer.publish(every: 3.0, on: .main, in: .common)
+        // 2-second poll — catches any notification gaps and keeps state in sync
+        // regardless of what other apps do to the audio route.
+        Timer.publish(every: 2.0, on: .main, in: .common)
             .autoconnect()
             .sink { [weak self] _ in self?.refresh() }
             .store(in: &cancellables)

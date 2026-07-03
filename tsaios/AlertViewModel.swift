@@ -60,6 +60,7 @@ final class AlertViewModel: ObservableObject {
         _ = PhoneSessionManager.shared   // activate WCSession at launch
         subscribeToLocation()
         subscribeToConnection()
+        subscribeToAppActive()
     }
 
     // MARK: - Public API
@@ -112,7 +113,7 @@ final class AlertViewModel: ObservableObject {
         fireAlert(distanceMetres: 50)
     }
 
-    // MARK: - Connection subscription (CarPlay connect only — disconnect is ignored)
+    // MARK: - Connection subscriptions (CarPlay connect only — disconnect is ignored)
 
     private func subscribeToConnection() {
         connectionMonitor.$isConnected
@@ -120,6 +121,26 @@ final class AlertViewModel: ObservableObject {
             .sink { [weak self] connected in
                 guard let self, connected else { return }
                 guard self.signalCount > 0, !self.isTracking else { return }
+                self.startTracking()
+            }
+            .store(in: &cancellables)
+    }
+
+    /// Second line of defence: fires every time the app foregrounds.
+    /// Handles the case where isConnected is *already* true (no Combine change
+    /// event fires) but tracking was stopped — e.g. by the idle timer while
+    /// CarPlay stayed connected, or if the initial route notification was
+    /// missed while the app was suspended.
+    private func subscribeToAppActive() {
+        NotificationCenter.default
+            .publisher(for: UIApplication.didBecomeActiveNotification)
+            .receive(on: RunLoop.main)
+            // Short delay lets ConnectionMonitor.refresh() settle first
+            .delay(for: .milliseconds(600), scheduler: RunLoop.main)
+            .sink { [weak self] _ in
+                guard let self else { return }
+                guard self.signalCount > 0, !self.isTracking else { return }
+                guard self.connectionMonitor.isConnected else { return }
                 self.startTracking()
             }
             .store(in: &cancellables)
