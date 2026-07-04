@@ -26,8 +26,26 @@ final class LocationManager: NSObject, ObservableObject, CLLocationManagerDelega
         manager.requestWhenInUseAuthorization()
     }
 
-    func startUpdating() {
+    /// Low-accuracy keep-alive: keeps the app running in background so
+    /// AVAudioSession route-change notifications (CarPlay connect) are delivered.
+    /// Uses ~3 km accuracy / 200 m filter — negligible battery impact.
+    func startKeepAlive() {
+        manager.desiredAccuracy = kCLLocationAccuracyThreeKilometers
+        manager.distanceFilter = 200
         manager.startUpdatingLocation()
+    }
+
+    /// Upgrade to full navigation accuracy for active scanning.
+    func startUpdating() {
+        manager.desiredAccuracy = kCLLocationAccuracyBestForNavigation
+        manager.distanceFilter = kCLDistanceFilterNone
+        manager.startUpdatingLocation()
+    }
+
+    /// Downgrade back to keep-alive mode (do NOT stop — stopping suspends the app).
+    func downgradeToKeepAlive() {
+        manager.desiredAccuracy = kCLLocationAccuracyThreeKilometers
+        manager.distanceFilter = 200
     }
 
     func stopUpdating() {

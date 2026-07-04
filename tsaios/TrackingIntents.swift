@@ -40,20 +40,17 @@ struct StopTrackingIntent: AppIntent {
 
 // MARK: - Siri phrase registration
 
-/// Registers phrases so Siri knows them without the user adding them
-/// manually in the Shortcuts app. Requires iOS 16.4+.
-///
-/// Supported phrases (Siri understands both):
-///   "Hey Siri, start tracking in Alert ME"
-///   "Hey Siri, stop tracking in Alert ME"
 struct AlertMEShortcuts: AppShortcutsProvider {
 
     static var appShortcuts: [AppShortcut] {
         AppShortcut(
             intent: StartTrackingIntent(),
             phrases: [
-                "Start tracking in \(.applicationName)",
                 "Start scanning in \(.applicationName)",
+                "Start scanning on \(.applicationName)",
+                "Start tracking in \(.applicationName)",
+                "Start tracking on \(.applicationName)",
+                "Begin scanning in \(.applicationName)",
             ],
             shortTitle: "Start Scanning",
             systemImageName: "light.beacon.max.fill"
@@ -61,8 +58,10 @@ struct AlertMEShortcuts: AppShortcutsProvider {
         AppShortcut(
             intent: StopTrackingIntent(),
             phrases: [
-                "Stop tracking in \(.applicationName)",
                 "Stop scanning in \(.applicationName)",
+                "Stop scanning on \(.applicationName)",
+                "Stop tracking in \(.applicationName)",
+                "Stop tracking on \(.applicationName)",
             ],
             shortTitle: "Stop Scanning",
             systemImageName: "light.beacon.max"

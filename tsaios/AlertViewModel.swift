@@ -66,6 +66,12 @@ final class AlertViewModel: ObservableObject {
     // MARK: - Public API
 
     func loadAndStart() async {
+        // Start low-accuracy location immediately so iOS keeps the app alive
+        // in the background. Without an active location session the app is
+        // suspended and cannot receive AVAudioSession route-change notifications
+        // (CarPlay connect). This is the keep-alive foundation for auto-start.
+        locationManager.startKeepAlive()
+
         await signalService.loadSignals()
         signalCount = signalService.signals.count
         // CarPlay may already have been connected before signals finished
@@ -89,7 +95,9 @@ final class AlertViewModel: ObservableObject {
         cancelIdleTimer()
         isTracking = false
         UIApplication.shared.isIdleTimerDisabled = false
-        locationManager.stopUpdating()
+        // Downgrade to keep-alive instead of stopping completely — stopping
+        // would suspend the app and break CarPlay auto-start detection.
+        locationManager.downgradeToKeepAlive()
         clearAlertState()
     }
 
